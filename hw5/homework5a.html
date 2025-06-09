@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Сонячна система</title>
+  <script src="../aframe/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+</head>
+<body>
+
+  <script src="planet.js"></script>
+
+  <a-scene vr-mode-ui="enabled: false;"
+           renderer="logarithmicDepthBuffer: true;"
+           embedded
+           arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false; debug: false;">
+
+    <a-marker type="pattern" url="../images/pattern-VR.patt">
+      <a-box scale="0.01 0.01 0.01" color="red"></a-box>
+      <a-entity rotation="-90 0 0" scale="0.1 0.1 0.1">
+
+        <!--<a-camera position="0 0 300" cursor-visible="true" cursor-scale="2" cursor-color="#0095DD" cursor-opacity="0.5"></a-camera>-->
+
+        <a-sphere radius="20.510" color="yellow" planet="dist: 0; mass: 1.989e30; name: Sun" src="../images/2k_sun.jpg"></a-sphere>
+        
+        <a-entity geometry="primitive: sphere; radius: 2.4397"
+                  material="color: #AA5588"
+                  planet="dist: 57.91e9; mass: 3.3011e23; T: 87.9691; name: Mercury"></a-entity>
+        
+        <a-entity geometry="primitive: sphere; radius: 6.0518"
+                  material="color: white"
+                  planet="dist: 108.2e9; mass: 4.876e24; T: 224.7; name: Venus"></a-entity>
+        
+        <a-sphere radius="6.371" src="../images/2k_earth_daymap.jpg"
+                  planet="dist: 149.6e9; mass: 6e24; T: 365; name: Earth"></a-sphere>
+        
+        <a-sphere radius="3.3895" material="color: red"
+                  planet="dist: 227.939366e9; mass: 6.4171e23; T: 686.980; name: Mars"></a-sphere>
+        
+        <!--<a-sphere radius="5" color="green" planet="dist: 130e9; mass: 1e30; T: 300; name: Dwarf"></a-sphere>-->
+
+      </a-entity>
+    </a-marker>
+
+    <a-entity main></a-entity>
+    <a-entity camera></a-entity>
+  </a-scene>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+

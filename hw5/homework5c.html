@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Сонячна система</title>
+  <script src="../aframe/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+  <style>
+    body { margin: 0; overflow: hidden; }
+    a-scene {
+      width: 100vw;
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      left: 0;
+    }
+  </style>
+</head>
+<body>
+  <script src="planet.js"></script>
+
+  <a-scene mindar-image="imageTargetSrc: ./images/targets.mind; maxTrack: 2"
+           color-space="sRGB"
+           renderer="colorManagement: true; physicallyCorrectLights: true"
+           vr-mode-ui="enabled: false"
+           device-orientation-permission-ui="enabled: false">
+
+    <a-entity mindar-image-target="targetIndex: 0">
+      <a-entity scale="0.01 0.01 0.01">
+        <!-- Сонячна система -->
+        <a-entity geometry="primitive: sphere; radius: 20.510"
+                  material="src: ./images/2k_sun.jpg"
+                  planet="dist: 0; mass: 1.989e30; name: Sun"></a-entity>
+
+        <a-entity geometry="primitive: sphere; radius: 2.4397"
+                  material="color: #AA5588"
+                  planet="dist: 57.91e9; mass: 3.3011e23; T: 87.9691; name: Mercury"></a-entity>
+
+        <a-entity geometry="primitive: sphere; radius: 6.0518"
+                  material="color: white"
+                  planet="dist: 108.2e9; mass: 4.876e24; T: 224.7; name: Venus"></a-entity>
+
+        <a-entity geometry="primitive: sphere; radius: 6.371"
+                  material="src: ./images/2k_earth_daymap.jpg"
+                  planet="dist: 149.6e9; mass: 6e24; T: 365; name: Earth"></a-entity>
+
+        <a-entity geometry="primitive: sphere; radius: 3.3895"
+                  material="src: ./images/2k_mars.jpg"
+                  planet="dist: 227.939366e9; mass: 6.4171e23; T: 686.980; name: Mars"></a-entity>
+
+        <a-entity main></a-entity>
+      </a-entity>
+    </a-entity>
+
+    <a-entity camera></a-entity>
+  </a-scene>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
