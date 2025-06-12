@@ -12,7 +12,7 @@ AFRAME.registerComponent('planet', {
     v: { type: 'array', default: [0, 0, 0] },
     a: { type: 'array', default: [0, 0, 0] },
     pos: { type: 'array', default: [0, 0, 0] },
-    fixed: { type: 'boolean', default: false } // нове поле
+    fixed: { type: 'boolean', default: false }
   },
 
   init: function () {
@@ -33,42 +33,39 @@ AFRAME.registerComponent('main', {
 
   tick: function () {
     for (let i = 0; i < this.solar_system.length; i++) {
-      let planet_i = this.solar_system[i].getAttribute('planet');
-      planet_i.a = [0, 0, 0];
+      let pi = this.solar_system[i].getAttribute('planet');
+      pi.a = [0, 0, 0];
 
       for (let j = 0; j < this.solar_system.length; j++) {
-        if (i !== j) {
-          let planet_j = this.solar_system[j].getAttribute('planet');
-          let deltapos = [0, 0, 0];
+        if (i === j) continue;
 
-          for (let k = 0; k < 3; k++) {
-            deltapos[k] = planet_j.pos[k] - planet_i.pos[k];
-          }
+        let pj = this.solar_system[j].getAttribute('planet');
+        let dp = [
+          pj.pos[0] - pi.pos[0],
+          pj.pos[1] - pi.pos[1],
+          pj.pos[2] - pi.pos[2]
+        ];
 
-          let r = Math.sqrt(
-            deltapos[0] ** 2 + deltapos[1] ** 2 + deltapos[2] ** 2
-          );
+        let r = Math.sqrt(dp[0] ** 2 + dp[1] ** 2 + dp[2] ** 2);
+        if (r === 0) continue;
 
-          if (r !== 0) {
-            for (let k = 0; k < 3; k++) {
-              planet_i.a[k] += (G * planet_j.mass * deltapos[k]) / Math.pow(r, 3);
-            }
-          }
+        for (let k = 0; k < 3; k++) {
+          pi.a[k] += (G * pj.mass * dp[k]) / Math.pow(r, 3);
         }
       }
 
-      if (!planet_i.fixed) {
+      if (!pi.fixed) {
         for (let k = 0; k < 3; k++) {
-          planet_i.v[k] += planet_i.a[k] * dt;
-          planet_i.pos[k] += planet_i.v[k] * dt;
+          pi.v[k] += pi.a[k] * dt;
+          pi.pos[k] += pi.v[k] * dt;
         }
       }
 
       this.solar_system[i].setAttribute(
         'position',
-        (planet_i.pos[0] / scale) + ' ' +
-        (planet_i.pos[1] / scale) + ' ' +
-        (planet_i.pos[2] / scale)
+        (pi.pos[0] / scale) + ' ' +
+        (pi.pos[1] / scale) + ' ' +
+        (pi.pos[2] / scale)
       );
     }
   }
