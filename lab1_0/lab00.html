@@ -9,33 +9,28 @@
   <body style="margin: 0; overflow: hidden;">
     <a-scene embedded arjs>
 
-      <!-- Маркер -->
+      <!-- AR-маркер -->
       <a-marker type="pattern" url="../images/pattern-The_Earth_seen_from_Apollo_17.patt">
 
-        <!-- Освітлення -->
-        <a-entity light="type: point; color: white; intensity: 2; distance: 100" position="30 0 0"></a-entity>
-        <a-entity light="type: ambient; color: #666"></a-entity>
+        <!-- Світло -->
+        <a-entity light="type: ambient; color: #777"></a-entity>
+        <a-entity light="type: point; color: white; intensity: 1.5; distance: 1" position="0.5 0.5 0.5"></a-entity>
 
-        <!-- Земля -->
+        <!-- Обертання Землі -->
         <a-entity id="earth"
                   geometry="primitive: sphere; radius: 0.064"
                   material="src: ../images/2k_earth_daymap.jpg"
-                  rotation="0 0 0"
-                  animation="property: rotation; to: 0 360 0; loop: true; dur: 5060">
+                  animation="property: rotation; to: 0 360 0; loop: true; dur: 5000">
         </a-entity>
 
         <!-- Місяць обертається навколо Землі -->
         <a-entity id="moon-orbit"
-                  position="0 0 0"
-                  animation="property: rotation; to: 0 360 0; loop: true; dur: 141680">
-
-          <!-- Місяць -->
+                  animation="property: rotation; to: 0 360 0; loop: true; dur: 14000">
           <a-entity id="moon"
                     geometry="primitive: sphere; radius: 0.0174"
                     material="src: ../images/2k_moon.jpg"
                     position="0.2 0 0">
           </a-entity>
-
         </a-entity>
 
       </a-marker>
