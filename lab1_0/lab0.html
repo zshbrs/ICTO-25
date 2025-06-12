@@ -9,35 +9,38 @@
 <body>
 
 <a-scene>
+
   <!-- Фон -->
   <a-sky src="../images/2k_stars_milky_way.jpg"></a-sky>
 
   <!-- Камера -->
-  <a-camera position="0 0 25"></a-camera>
+  <a-camera position="0 0 80"></a-camera>
 
-  <!-- Світло -->
-  <a-entity light="type: ambient; color: #888"></a-entity>
-  <a-entity light="type: point; color: white; intensity: 2" position="10 10 10"></a-entity>
+  <!-- Освітлення -->
+  <a-entity light="type: ambient; color: #777"></a-entity>
+  <a-entity light="type: point; intensity: 2; distance: 1000; color: white" position="30 30 30"></a-entity>
 
-  <!-- Земля -->
-  <a-entity id="earth"
-            geometry="primitive: sphere; radius: 6.4"
-            material="src: ../images/2k_earth_daymap.jpg"
-            planet="name: Earth; dist: 0; mass: 6e24; T: 0; fixed: true"
-            animation="property: rotation; to: 0 360 0; loop: true; dur: 5060">
+  <!-- Контейнер з обертовою Землею -->
+  <a-entity id="earth-container"
+            animation="property: rotation; to: 0 360 0; loop: true; dur: 5000">
+    <a-entity id="earth"
+              geometry="primitive: sphere; radius: 6.4"
+              material="src: ../images/2k_earth_daymap.jpg"
+              planet="name: Earth; dist: 0; mass: 6e24; T: 0; fixed: true">
+    </a-entity>
   </a-entity>
 
   <!-- Місяць -->
   <a-entity id="moon"
             geometry="primitive: sphere; radius: 1.74"
             material="src: ../images/2k_moon.jpg"
-            planet="name: Moon; dist: 20; mass: 7.34e22; T: 28">
+            planet="name: Moon; dist: 38.4; mass: 7.34e22; T: 28">
   </a-entity>
 
-  <!-- Фізика -->
+  <!-- Гравітаційна фізика -->
   <a-entity main></a-entity>
+
 </a-scene>
 
 </body>
 </html>
-
