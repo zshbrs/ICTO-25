@@ -2,24 +2,24 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Земля і Місяць — гравітаційна модель</title>
-  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <script src="planet.js"></script>
+  <title>Модель Земля–Місяць</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.4.2/aframe.min.js"></script>
 </head>
 <body>
+
+  <script src="planet.js"></script>
+
   <a-scene>
     <!-- Небо -->
     <a-sky src="../images/2k_stars_milky_way.jpg"></a-sky>
 
     <!-- Камера -->
-    <a-camera position="0 10 80"></a-camera>
+    <a-camera position="0 0 60"></a-camera>
 
-    <!-- Джерело світла (Сонце на відстані 30 000 км = 30 одиниць) -->
-    <a-entity light="type: point; color: white; intensity: 2; distance: 100"
-              position="30 0 0"></a-entity>
-    <a-entity light="type: ambient; color: #555"></a-entity>
+    <!-- Джерело світла (умовне Сонце) -->
+    <a-entity light="type: point; color: white; intensity: 2" position="30 0 0"></a-entity>
 
-    <!-- Земля (масштаб: 1 одиниця = 1000 км) -->
+    <!-- Земля -->
     <a-entity id="earth"
               geometry="primitive: sphere; radius: 6.4"
               material="src: ../images/2k_earth_daymap.jpg"
@@ -33,9 +33,11 @@
               planet="name: Moon; dist: 38400; mass: 7.34e22; T: 28">
     </a-entity>
 
-    <!-- Основний фізичний компонент -->
+    <!-- Компонент моделювання -->
     <a-entity main></a-entity>
   </a-scene>
+
 </body>
 </html>
+
 
