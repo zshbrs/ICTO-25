@@ -20,8 +20,9 @@ AFRAME.registerComponent('planet', {
     this.data.pos[0] = this.data.dist;
     this.el.setAttribute('position', (this.data.dist / scale) + ' 0 0');
 
+    // Початкова орбітальна швидкість по осі Z
     if (this.data.T !== 0) {
-      this.data.v[1] = 2 * Math.PI * this.data.dist / this.data.T;
+      this.data.v[2] = 2 * Math.PI * this.data.dist / this.data.T;
     }
   }
 });
@@ -70,4 +71,3 @@ AFRAME.registerComponent('main', {
     }
   }
 });
-
