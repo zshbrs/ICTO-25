@@ -3,44 +3,40 @@
 <head>
   <meta charset="utf-8">
   <title>Модель Земля–Місяць</title>
-
-  <!-- A-Frame та Planet Simulation -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="planet0.js"></script>
 </head>
 <body>
 
-  <a-scene>
-    <!-- Фон зоряного неба -->
-    <a-sky src="../images/2k_stars_milky_way.jpg"></a-sky>
+<a-scene>
+  <!-- Фон зоряного неба -->
+  <a-sky src="../images/2k_stars_milky_way.jpg"></a-sky>
 
-    <!-- Камера -->
-    <a-camera position="0 10 100"></a-camera>
+  <!-- Камера -->
+  <a-camera position="0 0 2.5"></a-camera>
 
-    <!-- Джерело світла (умовне Сонце) -->
-    <a-entity light="type: point; color: white; intensity: 2; distance: 100" position="30 0 0"></a-entity>
-    <a-entity light="type: ambient; color: #666"></a-entity>
+  <!-- Світло -->
+  <a-entity light="type: ambient; color: #666"></a-entity>
+  <a-entity light="type: point; color: white; intensity: 2; distance: 100" position="10 10 10"></a-entity>
 
-    <!-- Земля (фіксована, в центрі) -->
-    <a-entity id="earth"
-              geometry="primitive: sphere; radius: 0.064"
-              material="src: ../images/2k_earth_daymap.jpg"
-              planet="name: Earth; dist: 0; mass: 6e24; T: 0; fixed: true"
-              animation="property: rotation; to: 0 360 0; loop: true; dur: 5060">
-    </a-entity>
+  <!-- Земля (нерухома, обертається навколо осі) -->
+  <a-entity id="earth"
+            geometry="primitive: sphere; radius: 0.064"
+            material="src: ../images/2k_earth_daymap.jpg"
+            planet="name: Earth; dist: 0; mass: 6e24; T: 0; fixed: true"
+            animation="property: rotation; to: 0 360 0; loop: true; dur: 5060">
+  </a-entity>
 
-    <!-- Місяць -->
-    <a-entity id="moon"
-              geometry="primitive: sphere; radius: 0.0174"
-              material="src: ../images/2k_moon.jpg"
-              planet="name: Moon; dist: 38.4; mass: 7.34e22; T: 28">
-    </a-entity>
+  <!-- Місяць (рухається навколо Землі) -->
+  <a-entity id="moon"
+            geometry="primitive: sphere; radius: 0.0174"
+            material="src: ../images/2k_moon.jpg"
+            planet="name: Moon; dist: 38.4; mass: 7.34e22; T: 28">
+  </a-entity>
 
-    <!-- Гравітаційна симуляція -->
-    <a-entity main></a-entity>
-
-  </a-scene>
+  <!-- Фізика -->
+  <a-entity main></a-entity>
+</a-scene>
 
 </body>
 </html>
-
