@@ -2,39 +2,47 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Земля і Місяць — гравітаційна модель</title>
-  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <script src="planet_lab0.js"></script>
+  <title>Модель Земля–Місяць</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.4.2/aframe.min.js"></script>
 </head>
 <body>
+  <script src="planet_lab1_0.js"></script>
   <a-scene>
     <!-- Небо -->
     <a-sky src="../images/2k_stars_milky_way.jpg"></a-sky>
-
     <!-- Камера -->
-    <a-camera position="0 10 80"></a-camera>
-
-    <!-- Джерело світла (Сонце на відстані 30 000 км = 30 одиниць) -->
-    <a-entity light="type: point; color: white; intensity: 2; distance: 100"
-              position="30 0 0"></a-entity>
-    <a-entity light="type: ambient; color: #555"></a-entity>
-
-    <!-- Земля (масштаб: 1 одиниця = 1000 км) -->
+    <a-camera position="0 0 600" wasd-controls look-controls></a-camera>
+    <!-- Джерело світла (на відстані 30,000 км) -->
+    <a-entity id="light-source"
+              geometry="primitive: sphere; radius: 0.5"
+              material="color: yellow; emissive: yellow; emissiveIntensity: 0.8"
+              light="type: point; color: white; intensity: 3; distance: 1000"
+              position="300 0 0">
+    </a-entity>
+    <!-- Земля -->
     <a-entity id="earth"
               geometry="primitive: sphere; radius: 6.4"
               material="src: ../images/2k_earth_daymap.jpg"
-              planet="name: Earth; dist: 0; mass: 6e24; T: 1">
+              planet="name: Earth; dist: 0; mass: 6e24; T: 1; rotation_period: 1"
+              position="0 0 0">
     </a-entity>
-
     <!-- Місяць -->
     <a-entity id="moon"
               geometry="primitive: sphere; radius: 1.74"
               material="src: ../images/2k_moon.jpg"
-              planet="name: Moon; dist: 38400; mass: 7.34e22; T: 28">
+              planet="name: Moon; dist: 384.4; mass: 7.34e22; T: 28; rotation_period: 28"
+              position="384.4 0 0">
     </a-entity>
-
-    <!-- Основний фізичний компонент -->
+    <!-- Компонент моделювання -->
     <a-entity main></a-entity>
+    
+    <!-- Інформаційна панель -->
+    <a-text id="info-panel"
+            value="Модель Земля-Місяць\nМасштаб часу: 1:17,000\nРадіус Землі: 6,400 км\nРадіус Місяця: 1,740 км\nВідстань до світла: 30,000 км"
+            position="-50 40 -100"
+            color="white"
+            width="200">
+    </a-text>
   </a-scene>
 </body>
 </html>
