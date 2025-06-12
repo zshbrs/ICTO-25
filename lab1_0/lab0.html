@@ -9,34 +9,35 @@
 <body>
 
 <a-scene>
-  <!-- Фон зоряного неба -->
+  <!-- Фон -->
   <a-sky src="../images/2k_stars_milky_way.jpg"></a-sky>
 
   <!-- Камера -->
-  <a-camera position="0 0 2.5"></a-camera>
+  <a-camera position="0 0 100"></a-camera>
 
   <!-- Світло -->
   <a-entity light="type: ambient; color: #666"></a-entity>
-  <a-entity light="type: point; color: white; intensity: 2; distance: 100" position="10 10 10"></a-entity>
+  <a-entity light="type: point; color: white; intensity: 2; distance: 1000" position="30 30 30"></a-entity>
 
-  <!-- Земля (нерухома, обертається навколо осі) -->
+  <!-- Земля (велика, в центрі, обертається) -->
   <a-entity id="earth"
-            geometry="primitive: sphere; radius: 0.064"
+            geometry="primitive: sphere; radius: 6.4"
             material="src: ../images/2k_earth_daymap.jpg"
             planet="name: Earth; dist: 0; mass: 6e24; T: 0; fixed: true"
             animation="property: rotation; to: 0 360 0; loop: true; dur: 5060">
   </a-entity>
 
-  <!-- Місяць (рухається навколо Землі) -->
+  <!-- Місяць (теж великий) -->
   <a-entity id="moon"
-            geometry="primitive: sphere; radius: 0.0174"
+            geometry="primitive: sphere; radius: 1.74"
             material="src: ../images/2k_moon.jpg"
             planet="name: Moon; dist: 38.4; mass: 7.34e22; T: 28">
   </a-entity>
 
-  <!-- Фізика -->
+  <!-- Симуляція -->
   <a-entity main></a-entity>
 </a-scene>
 
 </body>
 </html>
+
