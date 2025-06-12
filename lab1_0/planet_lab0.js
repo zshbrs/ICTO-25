@@ -11,7 +11,8 @@ AFRAME.registerComponent('planet', {
     T: { type: 'number', default: 0 },
     v: { type: 'array', default: [0, 0, 0] },
     a: { type: 'array', default: [0, 0, 0] },
-    pos: { type: 'array', default: [0, 0, 0] }
+    pos: { type: 'array', default: [0, 0, 0] },
+    fixed: { type: 'boolean', default: false }
   },
 
   init: function () {
@@ -52,9 +53,11 @@ AFRAME.registerComponent('main', {
         }
       }
 
-      for (let k = 0; k < 3; k++) {
-        pi.v[k] += pi.a[k] * dt;
-        pi.pos[k] += pi.v[k] * dt;
+      if (!pi.fixed) {
+        for (let k = 0; k < 3; k++) {
+          pi.v[k] += pi.a[k] * dt;
+          pi.pos[k] += pi.v[k] * dt;
+        }
       }
 
       this.solar_system[i].setAttribute(
