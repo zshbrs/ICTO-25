@@ -11,27 +11,27 @@
     <!-- Небо -->
     <a-sky src="../images/2k_stars_milky_way.jpg"></a-sky>
     <!-- Камера -->
-    <a-camera position="0 0 600" wasd-controls look-controls></a-camera>
+    <a-camera position="0 0 80" wasd-controls look-controls></a-camera>
     <!-- Джерело світла (на відстані 30,000 км) -->
     <a-entity id="light-source"
-              geometry="primitive: sphere; radius: 0.5"
-              material="color: yellow; emissive: yellow; emissiveIntensity: 0.8"
-              light="type: point; color: white; intensity: 3; distance: 1000"
-              position="300 0 0">
+              geometry="primitive: sphere; radius: 1"
+              material="color: yellow; emissive: yellow; emissiveIntensity: 1"
+              light="type: point; color: white; intensity: 2; distance: 500"
+              position="50 0 0">
     </a-entity>
     <!-- Земля -->
     <a-entity id="earth"
               geometry="primitive: sphere; radius: 6.4"
-              material="src: ../images/2k_earth_daymap.jpg"
+              material="color: #4A90E2; roughness: 0.8"
               planet="name: Earth; dist: 0; mass: 6e24; T: 1; rotation_period: 1"
               position="0 0 0">
     </a-entity>
     <!-- Місяць -->
     <a-entity id="moon"
               geometry="primitive: sphere; radius: 1.74"
-              material="src: ../images/2k_moon.jpg"
-              planet="name: Moon; dist: 384.4; mass: 7.34e22; T: 28; rotation_period: 28"
-              position="384.4 0 0">
+              material="color: #C0C0C0; roughness: 0.9"
+              planet="name: Moon; dist: 38.44; mass: 7.34e22; T: 28; rotation_period: 28"
+              position="38.44 0 0">
     </a-entity>
     <!-- Компонент моделювання -->
     <a-entity main></a-entity>
@@ -39,11 +39,10 @@
     <!-- Інформаційна панель -->
     <a-text id="info-panel"
             value="Модель Земля-Місяць\nМасштаб часу: 1:17,000\nРадіус Землі: 6,400 км\nРадіус Місяця: 1,740 км\nВідстань до світла: 30,000 км"
-            position="-50 40 -100"
+            position="-30 25 -50"
             color="white"
-            width="200">
+            width="100">
     </a-text>
   </a-scene>
 </body>
 </html>
-
