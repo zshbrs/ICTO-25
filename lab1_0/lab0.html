@@ -3,41 +3,32 @@
 <head>
   <meta charset="utf-8">
   <title>Модель Земля–Місяць</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.4.2/aframe.min.js"></script>
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script src="planet_lab0.js"></script>
 </head>
 <body>
-
-  <script src="planet_lab0.js"></script>
-
   <a-scene>
-    <!-- Небо -->
-    <a-sky src="../images/2k_stars_milky_way.jpg"></a-sky>
+    <a-sky src="images/2k_stars_milky_way.jpg"></a-sky>
 
-    <!-- Камера -->
-    <a-camera position="0 0 60"></a-camera>
+    <a-camera position="0 10 100"></a-camera>
 
-    <!-- Джерело світла (умовне Сонце) -->
-    <a-entity light="type: point; color: white; intensity: 2" position="30 0 0"></a-entity>
+    <a-entity light="type: ambient; color: #666"></a-entity>
+    <a-entity light="type: point; color: white; intensity: 2; distance: 100" position="30 0 0"></a-entity>
 
-    <!-- Земля -->
     <a-entity id="earth"
               geometry="primitive: sphere; radius: 6.4"
-              material="src: ../images/2k_earth_daymap.jpg"
-              planet="name: Earth; dist: 0; mass: 6e24; T: 1">
+              material="src: images/2k_earth_daymap.jpg"
+              planet="name: Earth; dist: 0; mass: 6e24; T: 0"
+              animation="property: rotation; to: 0 360 0; loop: true; dur: 5060">
     </a-entity>
 
-    <!-- Місяць -->
     <a-entity id="moon"
               geometry="primitive: sphere; radius: 1.74"
-              material="src: ../images/2k_moon.jpg"
+              material="src: images/2k_moon.jpg"
               planet="name: Moon; dist: 38400; mass: 7.34e22; T: 28">
     </a-entity>
 
-    <!-- Компонент моделювання -->
     <a-entity main></a-entity>
   </a-scene>
-
 </body>
 </html>
-
-
