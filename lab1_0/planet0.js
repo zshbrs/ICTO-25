@@ -1,24 +1,27 @@
-const day = 24.0 * 60 * 60;
-const dt = day / 3;
-const G = 6.67e-11;
-const scale = 1e3; // 1 одиниця = 1000 км
+const day = 24.0 * 60 * 60;         // один земний день у секундах
+const dt = day / 3;                 // крок симуляції
+const G = 6.67e-11;                 // гравітаційна стала
+const scale = 1e3;                  // масштаб: 1 одиниця = 1000 км
 
 AFRAME.registerComponent('planet', {
   schema: {
-    name: { type: 'string', default: "" },
-    dist: { type: 'number', default: 0 },
-    mass: { type: 'number', default: 0 },
-    T: { type: 'number', default: 0 },
-    v: { type: 'array', default: [0, 0, 0] },
-    a: { type: 'array', default: [0, 0, 0] },
-    pos: { type: 'array', default: [0, 0, 0] },
+    name:  { type: 'string', default: "" },
+    dist:  { type: 'number', default: 0 },        // відстань (км)
+    mass:  { type: 'number', default: 0 },
+    T:     { type: 'number', default: 0 },        // період (у днях)
+    v:     { type: 'array',  default: [0, 0, 0] },
+    a:     { type: 'array',  default: [0, 0, 0] },
+    pos:   { type: 'array',  default: [0, 0, 0] },
     fixed: { type: 'boolean', default: false }
   },
 
   init: function () {
     this.data.T *= day;
     this.data.pos[0] = this.data.dist;
-    this.el.setAttribute('position', (this.data.dist / scale) + ' 0 0');
+
+    this.el.setAttribute('position', 
+      (this.data.pos[0] / scale) + ' 0 0'
+    );
 
     // Початкова орбітальна швидкість по осі Z
     if (this.data.T !== 0) {
@@ -47,7 +50,7 @@ AFRAME.registerComponent('main', {
           pj.pos[2] - pi.pos[2]
         ];
 
-        let r = Math.sqrt(dp[0] ** 2 + dp[1] ** 2 + dp[2] ** 2);
+        let r = Math.sqrt(dp[0]**2 + dp[1]**2 + dp[2]**2);
         if (r === 0) continue;
 
         for (let k = 0; k < 3; k++) {
@@ -71,3 +74,4 @@ AFRAME.registerComponent('main', {
     }
   }
 });
+
