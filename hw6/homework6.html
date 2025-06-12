@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=3" />
+  <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+</head>
+<body>
+<script>
+let markerVisible = { A: false, B: false, C: false, D: false };
+let coord = {
+  A: new THREE.Vector3(),
+  B: new THREE.Vector3(),
+  C: new THREE.Vector3(),
+  D: new THREE.Vector3()
+};
+
+AFRAME.registerComponent('registerevents', {
+  init: function () {
+    let marker = this.el;
+    marker.addEventListener('markerFound', function () {
+      markerVisible[marker.id] = true;
+    });
+    marker.addEventListener('markerLost', function () {
+      markerVisible[marker.id] = false;
+    });
+  }
+});
+
+function heron(a, b, c) {
+  const p = (a + b + c) / 2;
+  return Math.sqrt(p * (p - a) * (p - b) * (p - c));
+}
+
+AFRAME.registerComponent('run', {
+  init: function () {
+    A = document.getElementById("A").object3D;
+    B = document.getElementById("B").object3D;
+    C = document.getElementById("C").object3D;
+    D = document.getElementById("D").object3D;
+  },
+
+  tick: function () {
+    A.getWorldPosition(coord['A']);
+    B.getWorldPosition(coord['B']);
+    C.getWorldPosition(coord['C']);
+    D.getWorldPosition(coord['D']);
+
+    if (markerVisible["A"] && markerVisible["B"] && markerVisible["C"] && markerVisible["D"]) {
+      const lenAB = coord['A'].distanceTo(coord['B']);
+      const lenBC = coord['B'].distanceTo(coord['C']);
+      const lenCD = coord['C'].distanceTo(coord['D']);
+      const lenDA = coord['D'].distanceTo(coord['A']);
+
+      const perimeter = Math.round((lenAB + lenBC + lenCD + lenDA) * 100) / 100;
+
+      const lenAC = coord['A'].distanceTo(coord['C']);
+      const lenBD = coord['B'].distanceTo(coord['D']);
+      const lenAD = coord['A'].distanceTo(coord['D']);
+      const lenDB = coord['D'].distanceTo(coord['B']);
+
+      const S_ABC = Math.round(heron(lenAB, lenBC, lenAC) * 100) / 100;
+      const S_BCD = Math.round(heron(lenBC, lenCD, lenBD) * 100) / 100;
+      const S_CDA = Math.round(heron(lenCD, lenDA, lenAC) * 100) / 100;
+      const S_DAB = Math.round(heron(lenDA, lenAB, lenBD) * 100) / 100;
+
+      const PS = document.getElementById("PS");
+      PS.setAttribute("value",
+        "P(ABCD)=" + perimeter + "\n" +
+        "S(ABC)=" + S_ABC + " S(BCD)=" + S_BCD + "\n" +
+        "S(CDA)=" + S_CDA + " S(DAB)=" + S_DAB
+      );
+    }
+  }
+});
+</script>
+
+<a-scene vr-mode-ui="enabled: false;" embedded
+  arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
+  
+  <a-marker type="pattern" url="../images/pattern-A.patt" id="A" registerevents>
+    <a-sphere color="red" radius="0.1"></a-sphere>
+    <a-text id="PS" color="yellow" value="" position="0 0.3 0" rotation="-90 0 0"></a-text>
+  </a-marker>
+
+  <a-marker type="pattern" url="../images/pattern-B.patt" id="B" registerevents>
+    <a-sphere color="blue" radius="0.1"></a-sphere>
+  </a-marker>
+
+  <a-marker type="pattern" url="../images/pattern-C.patt" id="C" registerevents>
+    <a-sphere color="green" radius="0.1"></a-sphere>
+  </a-marker>
+
+  <a-marker type="pattern" url="../images/pattern-D.patt" id="D" registerevents>
+    <a-sphere color="orange" radius="0.1"></a-sphere>
+  </a-marker>
+
+  <a-entity camera></a-entity>
+  <a-entity run></a-entity>
+</a-scene>
+</body>
+</html>
