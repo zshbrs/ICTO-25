@@ -17,7 +17,11 @@
     <a-camera position="0 0 60"></a-camera>
 
     <!-- Джерело світла (умовне Сонце) -->
-    <a-entity light="type: point; color: white; intensity: 2" position="30 0 0"></a-entity>
+  <a-entity light="type: point; color: white; intensity: 2; distance: 100"
+            position="30 0 0"></a-entity>
+
+  <!-- Додаткове м’яке світло -->
+  <a-entity light="type: ambient; color: #555"></a-entity>
 
     <!-- Земля -->
     <a-entity id="earth"
