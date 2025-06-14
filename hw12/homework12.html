@@ -2,33 +2,53 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>AR: Моделі ліворуч і праворуч</title>
+    <title>AR з геолокацією</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
   </head>
   <body style="margin: 0; overflow: hidden;">
     <a-scene
-      embedded
       vr-mode-ui="enabled: false"
+      embedded
       arjs="sourceType: webcam; gpsMinAccuracy: 100; gpsTimeInterval: 1000"
       renderer="logarithmicDepthBuffer: true;"
     >
       <!-- Камера з GPS -->
       <a-camera gps-new-camera rotation-reader></a-camera>
-
-      <!-- Модель ліворуч (GPS трохи зміщений на захід) -->
-      <a-entity
-        gltf-model="model1.glb"
-        gps-new-entity-place="latitude: 47.99884182375154; longitude: 33.482195561923664"
-        scale="1 1 1"
-      ></a-entity>
-
-      <!-- Модель праворуч (GPS трохи зміщений на схід) -->
-      <a-entity
-        gltf-model="model2.glb"
-        gps-new-entity-place="latitude: 47.99884182375154; longitude: 33.482395561923664"
-        scale="1 1 1"
-      ></a-entity>
     </a-scene>
+
+    <script>
+      // Як тільки визначиться місцезнаходження
+      window.addEventListener('gps-camera-update-position', (event) => {
+        const latitude = event.detail.position.latitude;
+        const longitude = event.detail.position.longitude;
+
+        console.log("Ваші координати:", latitude, longitude);
+
+        const scene = document.querySelector('a-scene');
+
+        // Створення моделі ліворуч (~20м на захід)
+        const model1 = document.createElement('a-entity');
+        model1.setAttribute('gltf-model', 'model1.glb');
+        model1.setAttribute('scale', '1 1 1');
+        model1.setAttribute('gps-new-entity-place', {
+          latitude: latitude,
+          longitude: longitude - 0.0002
+        });
+        scene.appendChild(model1);
+
+        // Створення моделі праворуч (~20м на схід)
+        const model2 = document.createElement('a-entity');
+        model2.setAttribute('gltf-model', 'model2.glb');
+        model2.setAttribute('scale', '1 1 1');
+        model2.setAttribute('gps-new-entity-place', {
+          latitude: latitude,
+          longitude: longitude + 0.0002
+        });
+        scene.appendChild(model2);
+      });
+    </script>
   </body>
 </html>
+
+
