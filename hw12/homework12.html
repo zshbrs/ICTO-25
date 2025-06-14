@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>AR з геолокацією</title>
+    <title>AR: Моделі на 30 см ліворуч і праворуч</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
   </head>
@@ -13,37 +13,39 @@
       arjs="sourceType: webcam; gpsMinAccuracy: 100; gpsTimeInterval: 1000"
       renderer="logarithmicDepthBuffer: true;"
     >
-      <!-- Камера з GPS -->
+      <!-- Камера -->
       <a-camera gps-new-camera rotation-reader></a-camera>
     </a-scene>
 
     <script>
-      // Як тільки визначиться місцезнаходження
+      // Географічна довжина на 1 м = ~0.00001 градуса
+      const offset = 0.000003; // ~30 см у довготу
+
       window.addEventListener('gps-camera-update-position', (event) => {
         const latitude = event.detail.position.latitude;
         const longitude = event.detail.position.longitude;
 
-        console.log("Ваші координати:", latitude, longitude);
+        console.log("Координати користувача:", latitude, longitude);
 
         const scene = document.querySelector('a-scene');
 
-        // Створення моделі ліворуч (~20м на захід)
+        // Модель ліворуч (на 30 см захід)
         const model1 = document.createElement('a-entity');
         model1.setAttribute('gltf-model', 'model1.glb');
         model1.setAttribute('scale', '1 1 1');
         model1.setAttribute('gps-new-entity-place', {
           latitude: latitude,
-          longitude: longitude - 0.0002
+          longitude: longitude - offset
         });
         scene.appendChild(model1);
 
-        // Створення моделі праворуч (~20м на схід)
+        // Модель праворуч (на 30 см схід)
         const model2 = document.createElement('a-entity');
         model2.setAttribute('gltf-model', 'model2.glb');
         model2.setAttribute('scale', '1 1 1');
         model2.setAttribute('gps-new-entity-place', {
           latitude: latitude,
-          longitude: longitude + 0.0002
+          longitude: longitude + offset
         });
         scene.appendChild(model2);
       });
