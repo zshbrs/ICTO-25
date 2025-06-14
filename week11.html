@@ -1,27 +1,45 @@
 <!DOCTYPE html>
-<html>
-	<head>
-		<meta name="viewport" content="initial-scale=1.0, width=device-width">
-		<script type="importmap">
-		  {
-		    "imports": {
-		      "three": "./threejs/three.module.js",
-		      "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/",
-		      "mindar":"./mindar/mindar-face-three.prod.js"
-		    }
-		  }
-		</script>
-		<style>
-			html, body {
-			    height: 100%;
-			    width: 100%;
-			    margin: 0;
-			    overflow: hidden;
-			    position: relative;
-			}
-		</style>
-		<script type="module" src="./week11.js"></script>
-	</head>
-	<body>
-	</body>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8">
+    <title>Face Mask + Glasses</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Імпорт map -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./threejs/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/",
+          "mindar": "./mindar/mindar-face-three.prod.js"
+        }
+      }
+    </script>
+
+    <!-- Стилі -->
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        height: 100%;
+        width: 100%;
+        background: transparent;
+      }
+
+      #mindar-video {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: -1;
+        width: 100vw;
+        height: 100vh;
+        object-fit: cover;
+      }
+    </style>
+  </head>
+
+  <body>
+    <script type="module" src="./week11.js"></script>
+  </body>
 </html>
