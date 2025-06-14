@@ -1,35 +1,15 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="uk">
 <head>
-		<meta charset="utf-8">
-		<style>
-			html, body { 
-				margin: 0; 
-				width: 100%;
-				height: 100%;
-				overflow: hidden;
-				position: relative;
-			}
-		</style>
-		<script type="importmap">
-		  {
-		    "imports": {
-		      "three": "./three/three.module.min.js",
-		      "mindar_face": "./mindar/mindar-face-three.prod.js",
-		      "three/addons/": "https://unpkg.com/three@0.159.0/examples/jsm/",
-		      "gps": "./arjs/ar-threex-location-only.js"
-		    }
-		  }
-		</script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar-nft.js"></script>
-
-    <script src="1204_1.js"></script>
+  <meta charset="UTF-8">
+  <title>GPS AR без THREEx</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas { display: block; }
+  </style>
+  <script type="module" src="./main.js"></script>
 </head>
-
 <body>
-    <video id='video1' autoplay playsinline style='display:none'></video>
 </body>
-
 </html>
+
