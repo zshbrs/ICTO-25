@@ -2,10 +2,11 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>AR з геолокацією — 2 метри</title>
+    <title>AR з геолокацією — 2 метри з масштабом</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar-nft.js"></script>
   </head>
+
   <body style="margin: 0; overflow: hidden;">
     <a-scene
       vr-mode-ui="enabled: false"
@@ -13,44 +14,47 @@
       arjs="sourceType: webcam; gpsMinAccuracy: 100; gpsTimeInterval: 1000"
       renderer="logarithmicDepthBuffer: true;"
     >
-      <!-- Камера з GPS -->
       <a-camera gps-new-camera rotation-reader></a-camera>
     </a-scene>
 
     <script>
-      // ~2 метри = приблизно 0.000018 градуса по довготі
-      const offset = 0.000018;
+      const offset = 0.000018; // ≈ 2 метри по довготі
 
       window.addEventListener('gps-camera-update-position', (event) => {
         const latitude = event.detail.position.latitude;
         const longitude = event.detail.position.longitude;
-
         console.log("Ваші координати:", latitude, longitude);
 
         const scene = document.querySelector('a-scene');
 
-        // Модель ліворуч (на 2 метри захід)
+        // Модель ліворуч
         const model1 = document.createElement('a-entity');
         model1.setAttribute('gltf-model', 'model1.glb');
-        model1.setAttribute('scale', '1 1 1');
         model1.setAttribute('gps-new-entity-place', {
           latitude: latitude,
           longitude: longitude - offset
         });
+        model1.setAttribute('scale', '2 2 2');
+        model1.setAttribute('position', '0 1 0');
+        model1.addEventListener('model-loaded', () => {
+          console.log('✅ Модель 1 завантажена');
+        });
         scene.appendChild(model1);
 
-        // Модель праворуч (на 2 метри схід)
+        // Модель праворуч
         const model2 = document.createElement('a-entity');
         model2.setAttribute('gltf-model', 'model2.glb');
-        model2.setAttribute('scale', '1 1 1');
         model2.setAttribute('gps-new-entity-place', {
           latitude: latitude,
           longitude: longitude + offset
+        });
+        model2.setAttribute('scale', '2 2 2');
+        model2.setAttribute('position', '0 1 0');
+        model2.addEventListener('model-loaded', () => {
+          console.log('✅ Модель 2 завантажена');
         });
         scene.appendChild(model2);
       });
     </script>
   </body>
 </html>
-
-
