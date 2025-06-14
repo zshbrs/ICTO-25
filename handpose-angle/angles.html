@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Handpose: Кути між пальцями</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+  <style>
+    body { margin: 0; font-family: sans-serif; background: #111; color: #0f0; }
+    video { position: fixed; top: 0; left: 0; transform: scaleX(-1); }
+    #angles { position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.6); padding: 10px; }
+  </style>
+</head>
+<body>
+  <video id="video" width="640" height="480" autoplay></video>
+  <div id="angles">Очікуємо руку...</div>
+
+  <script>
+    const video = document.getElementById('video');
+    const anglesDiv = document.getElementById('angles');
+
+    async function setupCamera() {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+      return new Promise(resolve => {
+        video.onloadedmetadata = () => resolve(video);
+      });
+    }
+
+    function subtract(a, b) {
+      return { x: a[0] - b[0], y: a[1] - b[1], z: a[2] - b[2] };
+    }
+
+    function vectorAngle(v1, v2) {
+      const dot = v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+      const mag1 = Math.sqrt(v1.x ** 2 + v1.y ** 2 + v1.z ** 2);
+      const mag2 = Math.sqrt(v2.x ** 2 + v2.y ** 2 + v2.z ** 2);
+      const cosTheta = dot / (mag1 * mag2);
+      return Math.acos(cosTheta) * (180 / Math.PI);
+    }
+
+    async function main() {
+      await setupCamera();
+      const model = await handpose.load();
+      async function detect() {
+        const predictions = await model.estimateHands(video);
+        if (predictions.length > 0) {
+          const landmarks = predictions[0].landmarks;
+
+          const v_index = subtract(landmarks[8], landmarks[5]);
+          const v_middle = subtract(landmarks[12], landmarks[9]);
+          const v_ring = subtract(landmarks[16], landmarks[13]);
+          const v_pinky = subtract(landmarks[20], landmarks[17]);
+
+          const angle1 = vectorAngle(v_index, v_middle);
+          const angle2 = vectorAngle(v_middle, v_ring);
+          const angle3 = vectorAngle(v_ring, v_pinky);
+
+          anglesDiv.innerHTML = `
+            <b>Кути між пальцями (градуси):</b><br>
+            🟢 Вказівний – Середній: ${angle1.toFixed(1)}°<br>
+            🟡 Середній – Безіменний: ${angle2.toFixed(1)}°<br>
+            🔴 Безіменний – Мізинець: ${angle3.toFixed(1)}°
+          `;
+        } else {
+          anglesDiv.innerText = 'Рука не знайдена...';
+        }
+        requestAnimationFrame(detect);
+      }
+      detect();
+    }
+
+    main();
+  </script>
+</body>
+</html>
