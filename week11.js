@@ -129,7 +129,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 		await mindarThree.start();
 
-		mindarThree.video.style.visibility = "hidden";
+		//mindarThree.video.style.visibility = "hidden";
 		//console.log(mindarThree.video.style.visibility);
 
 		renderer.setAnimationLoop(() => {
