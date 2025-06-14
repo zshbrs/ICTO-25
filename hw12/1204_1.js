@@ -1,12 +1,9 @@
-import * as THREE from "./three/three.module.min.js";
+import * as THREE from "three";
 
 let scene, camera, renderer;
-
 const geom = new THREE.BoxGeometry(20, 20, 20);
-
 let orientationControls;
 let mousedown = false, lastX = 0;
-
 let fake = null;
 let first = true;
 
@@ -87,18 +84,19 @@ function setupObjects(longitude, latitude) {
   const material4 = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
 
   const box1 = new THREE.Mesh(geom, material1);
-  box1.position.set(0, 0, -100); // north
+  box1.position.set(0, 0, -100); // північ
   scene.add(box1);
 
   const box2 = new THREE.Mesh(geom, material2);
-  box2.position.set(0, 0, 100); // south
+  box2.position.set(0, 0, 100); // південь
   scene.add(box2);
 
   const box3 = new THREE.Mesh(geom, material3);
-  box3.position.set(-100, 0, 0); // west
+  box3.position.set(-100, 0, 0); // захід
   scene.add(box3);
 
   const box4 = new THREE.Mesh(geom, material4);
-  box4.position.set(100, 0, 0); // east
+  box4.position.set(100, 0, 0); // схід
   scene.add(box4);
 }
+
