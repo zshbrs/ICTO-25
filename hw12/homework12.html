@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<script src="aframe/aframe.min.js"></script>
+		<script src='https://raw.githack.com/AR-js-org/AR.js/master/three.js/build/ar-threex-location-only.js'></script>
+		<script src='arjs/aframe-ar.js'></script>
+	</head>
+	<body>
+		<a-scene arjs>
+		    <a-camera gps-new-camera></a-camera>
+
+		    <a-entity material="color: yellow" geometry="primitive: box" gps-new-entity-place="latitude: 47.99884182375154; longitude: 33.482295561923664" scale="0.5 0.5 0.5"></a-entity>
+
+		    <a-entity material="color: blue" geometry="primitive: box" gps-new-entity-place="latitude: 47.99885021376879; longitude: 33.482308629858345" scale="0.5 0.5 0.5"></a-entity>
+		    <a-entity material="color: green" geometry="primitive: box" gps-new-entity-place="latitude: 47.998854742418985; longitude: 33.482343972872215" scale="0.5 0.5 0.5"></a-entity>
+		    <a-entity material="color: red" geometry="primitive: box" gps-new-entity-place="latitude: 47.99889487680203; longitude: 33.4825247630809" scale="0.5 0.5 0.5"></a-entity>
+
+		</a-scene>
+	</body>
+</html>  створіть сцену із двома довільними моделями за відносними віртуальними координатами ліворуч та праворуч від себе
