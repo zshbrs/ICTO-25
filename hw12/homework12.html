@@ -1,20 +1,34 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<script src="aframe/aframe.min.js"></script>
-		<script src='https://raw.githack.com/AR-js-org/AR.js/master/three.js/build/ar-threex-location-only.js'></script>
-		<script src='arjs/aframe-ar.js'></script>
-	</head>
-	<body>
-		<a-scene arjs>
-		    <a-camera gps-new-camera></a-camera>
+  <head>
+    <meta charset="utf-8" />
+    <title>AR сцена з моделями ліворуч та праворуч</title>
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+  </head>
+  <body style="margin: 0; overflow: hidden;">
+    <a-scene
+      vr-mode-ui="enabled: false"
+      embedded
+      arjs="sourceType: webcam; gpsMinAccuracy: 100; gpsTimeInterval: 1000"
+      renderer="logarithmicDepthBuffer: true;"
+    >
+      <!-- Камера GPS -->
+      <a-camera gps-new-camera rotation-reader></a-camera>
 
-		    <a-entity material="color: yellow" geometry="primitive: box" gps-new-entity-place="latitude: 47.99884182375154; longitude: 33.482295561923664" scale="0.5 0.5 0.5"></a-entity>
+      <!-- Модель ліворуч (зміщення на -5m по широті) -->
+      <a-entity
+        gltf-model="url(assets/model1.glb)"
+        gps-new-entity-place="latitude: 47.99884182375154; longitude: 33.482195561923664"
+        scale="1 1 1"
+      ></a-entity>
 
-		    <a-entity material="color: blue" geometry="primitive: box" gps-new-entity-place="latitude: 47.99885021376879; longitude: 33.482308629858345" scale="0.5 0.5 0.5"></a-entity>
-		    <a-entity material="color: green" geometry="primitive: box" gps-new-entity-place="latitude: 47.998854742418985; longitude: 33.482343972872215" scale="0.5 0.5 0.5"></a-entity>
-		    <a-entity material="color: red" geometry="primitive: box" gps-new-entity-place="latitude: 47.99889487680203; longitude: 33.4825247630809" scale="0.5 0.5 0.5"></a-entity>
-
-		</a-scene>
-	</body>
-</html>  створіть сцену із двома довільними моделями за відносними віртуальними координатами ліворуч та праворуч від себе
+      <!-- Модель праворуч (зміщення на +5m по довготі) -->
+      <a-entity
+        gltf-model="url(assets/model2.glb)"
+        gps-new-entity-place="latitude: 47.99884182375154; longitude: 33.482395561923664"
+        scale="1 1 1"
+      ></a-entity>
+    </a-scene>
+  </body>
+</html>
