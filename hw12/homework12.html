@@ -2,30 +2,30 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>AR сцена з моделями ліворуч та праворуч</title>
+    <title>AR: Моделі ліворуч і праворуч</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
   </head>
   <body style="margin: 0; overflow: hidden;">
     <a-scene
-      vr-mode-ui="enabled: false"
       embedded
+      vr-mode-ui="enabled: false"
       arjs="sourceType: webcam; gpsMinAccuracy: 100; gpsTimeInterval: 1000"
       renderer="logarithmicDepthBuffer: true;"
     >
-      <!-- Камера GPS -->
+      <!-- Камера з GPS -->
       <a-camera gps-new-camera rotation-reader></a-camera>
 
-      <!-- Модель ліворуч (зміщення на -5m по широті) -->
+      <!-- Модель ліворуч (GPS трохи зміщений на захід) -->
       <a-entity
-        gltf-model="url(assets/model1.glb)"
+        gltf-model="model1.glb"
         gps-new-entity-place="latitude: 47.99884182375154; longitude: 33.482195561923664"
         scale="1 1 1"
       ></a-entity>
 
-      <!-- Модель праворуч (зміщення на +5m по довготі) -->
+      <!-- Модель праворуч (GPS трохи зміщений на схід) -->
       <a-entity
-        gltf-model="url(assets/model2.glb)"
+        gltf-model="model2.glb"
         gps-new-entity-place="latitude: 47.99884182375154; longitude: 33.482395561923664"
         scale="1 1 1"
       ></a-entity>
