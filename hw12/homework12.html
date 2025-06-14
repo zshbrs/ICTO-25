@@ -1,60 +1,34 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <title>AR з геолокацією — 2 метри з масштабом</title>
-    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar-nft.js"></script>
-  </head>
 
-  <body style="margin: 0; overflow: hidden;">
-    <a-scene
-      vr-mode-ui="enabled: false"
-      embedded
-      arjs="sourceType: webcam; gpsMinAccuracy: 100; gpsTimeInterval: 1000"
-      renderer="logarithmicDepthBuffer: true;"
-    >
-      <a-camera gps-new-camera rotation-reader></a-camera>
-    </a-scene>
+<head>
+		<meta charset="utf-8">
+		<style>
+			html, body { 
+				margin: 0; 
+				width: 100%;
+				height: 100%;
+				overflow: hidden;
+				position: relative;
+			}
+		</style>
+		<script type="importmap">
+		  {
+		    "imports": {
+		      "three": "./three/three.module.min.js",
+		      "mindar_face": "./mindar/mindar-face-three.prod.js",
+		      "three/addons/": "https://unpkg.com/three@0.159.0/examples/jsm/",
+		      "gps": "./arjs/ar-threex-location-only.js"
+		    }
+		  }
+		</script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.min.js"></script>
+<script src="./arjs/ar-threex-location-only.js"></script>
+    <script src="1204_1.js"></script>
+</head>
 
-    <script>
-      const offset = 0.000018; // ≈ 2 метри по довготі
+<body>
+    <video id='video1' autoplay playsinline style='display:none'></video>
+</body>
 
-      window.addEventListener('gps-camera-update-position', (event) => {
-        const latitude = event.detail.position.latitude;
-        const longitude = event.detail.position.longitude;
-        console.log("Ваші координати:", latitude, longitude);
-
-        const scene = document.querySelector('a-scene');
-
-        // Модель ліворуч
-        const model1 = document.createElement('a-entity');
-        model1.setAttribute('gltf-model', 'model1.glb');
-        model1.setAttribute('gps-new-entity-place', {
-          latitude: latitude,
-          longitude: longitude - offset
-        });
-        model1.setAttribute('scale', '2 2 2');
-        model1.setAttribute('position', '0 1 0');
-        model1.addEventListener('model-loaded', () => {
-          console.log('✅ Модель 1 завантажена');
-        });
-        scene.appendChild(model1);
-
-        // Модель праворуч
-        const model2 = document.createElement('a-entity');
-        model2.setAttribute('gltf-model', 'model2.glb');
-        model2.setAttribute('gps-new-entity-place', {
-          latitude: latitude,
-          longitude: longitude + offset
-        });
-        model2.setAttribute('scale', '2 2 2');
-        model2.setAttribute('position', '0 1 0');
-        model2.addEventListener('model-loaded', () => {
-          console.log('✅ Модель 2 завантажена');
-        });
-        scene.appendChild(model2);
-      });
-    </script>
-  </body>
 </html>
