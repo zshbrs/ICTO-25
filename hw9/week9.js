@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	const start = async() => {
 		const mindarThree = new MINDAR.MindARThree({
 			container: document.body,
-			imageTargetSrc: "images/catdog.mind",
+			imageTargetSrc: "accep/catdog.mind",
 			maxTrack: 2,
 			uiLoading: "yes", 
 			uiScanning: "yes", 
@@ -44,7 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 		loader.load(
 			// resource URL
-			'images/cartoon_dog.glb',
+			'accep/cartoon_dog.glb',
 			// called when the resource is loaded
 			function ( model ) {
 				console.log("Модель собаки завантажено", model);
@@ -80,7 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 		loader.load(
 			// resource URL
-			'images/toon_cat_free.glb',
+			'accep/toon_cat_free.glb',
 			// called when the resource is loaded
 			function ( model ) {
 				console.log("Модель кота завантажено", model);
