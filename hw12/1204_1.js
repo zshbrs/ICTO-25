@@ -1,122 +1,70 @@
-//import * as THREE from "three";
-//import * as THREEx from "gps";
+import * as THREE from 'https://cdn.skypack.dev/three@0.159.0';
 
-document.addEventListener("DOMContentLoaded", () => {
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(80, 2, 0.1, 50000);
-    const renderer = new THREE.WebGLRenderer({ 
-        //canvas: document.querySelector('#canvas1') 
-	antialias: true
-    });
-    renderer.setSize( window.innerWidth, window.innerHeight );
-    document.body.appendChild( renderer.domElement );
+let scene, camera, renderer;
 
-    const geom = new THREE.BoxGeometry(20,20,20);
+init();
+getLocation();
 
-    const arjs = new THREEx.LocationBased(scene, camera);
+function init() {
+  scene = new THREE.Scene();
 
-    // You can change the minimum GPS accuracy needed to register a position - by default 1000m
-    //const arjs = new THREEx.LocationBased(scene, camera. { gpsMinAccuracy: 30 } );
-    const cam = new THREEx.WebcamRenderer(renderer, '#video1');
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.z = 5;
 
-    const mouseStep = 5*Math.PI/180;
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  document.body.appendChild(renderer.domElement);
 
-    let orientationControls;
+  animate();
+}
 
-    // Orientation controls only work on mobile device
-    if (isMobile()){   
-        orientationControls = new THREEx.DeviceOrientationControls(camera);
-    } 
+function getLocation() {
+  if (!navigator.geolocation) {
+    alert("Ваш браузер не підтримує геолокацію.");
+    return;
+  }
 
-    let fake = null;
-    let first = true;
+  navigator.geolocation.getCurrentPosition(success, error, { enableHighAccuracy: true });
+}
 
-    arjs.on("gpsupdate", pos => {
-        if(first) {
-            setupObjects(pos.coords.longitude, pos.coords.latitude);
-            first = false;
-        }
-    });
+function success(pos) {
+  const lat = pos.coords.latitude;
+  const lon = pos.coords.longitude;
 
-    arjs.on("gpserror", code => {
-        alert("GPS error: code ${code}");
-    });
+  console.log(`📍 Локація: ${lat}, ${lon}`);
 
-    // Uncomment to use a fake GPS location
-    //fake = { lat: 51.05, lon : -0.72 };
-    if(fake) {
-        arjs.fakeGps(fake.lon, fake.lat);
-    } else {
-        arjs.startGps();
-    } 
+  addCubes(lat, lon);
+}
 
+function error(err) {
+  console.warn(`❌ GPS error (${err.code}): ${err.message}`);
+}
 
-    let mousedown = false, lastX = 0;
+function addCubes(lat, lon) {
+  const geom = new THREE.BoxGeometry(1, 1, 1);
+  const mNorth = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+  const mSouth = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+  const mWest = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+  const mEast = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
 
-    // Mouse events for testing on desktop machine
-    if(!isMobile()) {
-        window.addEventListener("mousedown", e=> {
-            mousedown = true;
-        });
+  const cubeN = new THREE.Mesh(geom, mNorth);
+  cubeN.position.set(0, 0, -3); // північ (вперед)
+  scene.add(cubeN);
 
-        window.addEventListener("mouseup", e=> {
-            mousedown = false;
-        });
+  const cubeS = new THREE.Mesh(geom, mSouth);
+  cubeS.position.set(0, 0, 3); // південь (назад)
+  scene.add(cubeS);
 
-        window.addEventListener("mousemove", e=> {
-            if(!mousedown) return;
-            if(e.clientX < lastX) {
-                camera.rotation.y += mouseStep; 
-                if(camera.rotation.y < 0) {
-                    camera.rotation.y += 2 * Math.PI;
-                }
-            } else if (e.clientX > lastX) {
-                camera.rotation.y -= mouseStep;
-                if(camera.rotation.y > 2 * Math.PI) {
-                    camera.rotation.y -= 2 * Math.PI;
-                }
-            }
-            lastX = e.clientX;
-        });
-    }
+  const cubeW = new THREE.Mesh(geom, mWest);
+  cubeW.position.set(-3, 0, 0); // захід (ліворуч)
+  scene.add(cubeW);
 
-	function isMobile() {
-    	if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-        	// true for mobile device
-        	return true;
-    	}
-    	return false;
-	}
+  const cubeE = new THREE.Mesh(geom, mEast);
+  cubeE.position.set(3, 0, 0); // схід (праворуч)
+  scene.add(cubeE);
+}
 
-    function render(time) {
-        resizeUpdate();
-        if(orientationControls) orientationControls.update();
-        cam.update();
-        renderer.render(scene, camera);
-        requestAnimationFrame(render);
-    }
-
-    function resizeUpdate() {
-        const canvas = renderer.domElement;
-        const width = canvas.clientWidth, height = canvas.clientHeight;
-        if(width != canvas.width || height != canvas.height) {
-            renderer.setSize(width, height, false);
-        }
-        camera.aspect = canvas.clientWidth / canvas.clientHeight;
-        camera.updateProjectionMatrix();
-    }
-
-    function setupObjects(longitude, latitude) {
-        // Use position of first GPS update (fake or real)
-        const material = new THREE.MeshBasicMaterial({color: 0xff0000});
-        const material2 = new THREE.MeshBasicMaterial({color: 0xffff00});
-        const material3 = new THREE.MeshBasicMaterial({color: 0x0000ff});
-        const material4 = new THREE.MeshBasicMaterial({color: 0x00ff00});
-        arjs.add(new THREE.Mesh(geom, material), longitude, latitude + 0.001); // slightly north
-        arjs.add(new THREE.Mesh(geom, material2), longitude, latitude - 0.001); // slightly south
-        arjs.add(new THREE.Mesh(geom, material3), longitude - 0.001, latitude); // slightly west
-        arjs.add(new THREE.Mesh(geom, material4), longitude + 0.001, latitude); // slightly east
-    }
-
-    requestAnimationFrame(render);
-});
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+}
