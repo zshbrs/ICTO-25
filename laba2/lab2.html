@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Земля-Місяць AR</title>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.130.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mindar-image@1.2.0/dist/mindar-image.prod.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        .ar-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* Відзеркалення для фронтальної камери */
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="ar-container">
+        <video muted playsinline></video>
+        <canvas class="webgl-canvas"></canvas>
+    </div>
+    <script type="module" src="main.js"></script>
+</body>
+</html>
