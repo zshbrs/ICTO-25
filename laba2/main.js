@@ -6,32 +6,32 @@ const start = async () => {
 
   const { renderer, scene, camera } = mindarThree;
 
-  const light = new THREE.PointLight(0xffffff, 1.5, 0);
-  light.position.set(30, 0, 0);
+  // Освітлення
+  const light = new THREE.PointLight(0xffffff, 1.5);
+  light.position.set(30, 0, 0); // 30 000 км умовно
   scene.add(light);
 
   const anchor = mindarThree.addAnchor(0);
   const group = new THREE.Group();
   anchor.group.add(group);
 
+  // Завантаження текстур
   const loader = new THREE.TextureLoader();
   const earthTexture = loader.load('./assets/2k_earth_daymap.jpg');
   const moonTexture = loader.load('./assets/2k_moon.jpg');
 
-  const earthRadius = 0.064;
-  const moonRadius = 0.0174;
-  const moonDistance = 0.2;
-
+  // Земля
   const earth = new THREE.Mesh(
-    new THREE.SphereGeometry(earthRadius, 64, 64),
+    new THREE.SphereGeometry(0.064, 64, 64),
     new THREE.MeshStandardMaterial({ map: earthTexture })
   );
 
+  // Місяць
   const moon = new THREE.Mesh(
-    new THREE.SphereGeometry(moonRadius, 64, 64),
+    new THREE.SphereGeometry(0.0174, 64, 64),
     new THREE.MeshStandardMaterial({ map: moonTexture })
   );
-  moon.position.set(moonDistance, 0, 0);
+  moon.position.set(0.2, 0, 0);
 
   const moonOrbit = new THREE.Object3D();
   moonOrbit.add(moon);
@@ -40,14 +40,9 @@ const start = async () => {
   group.add(moonOrbit);
 
   await mindarThree.start();
+
   renderer.setAnimationLoop(() => {
-    const time = performance.now() / 1000;
+    const t = performance.now() / 1000;
+    earth.rotation.y = t * 2 * Math.PI / (1 / 17000);     // Земля за добу
+    moonOrbi
 
-    earth.rotation.y = time * (2 * Math.PI / (1 / 17000));
-    moonOrbit.rotation.y = time * (2 * Math.PI / (28 / 17000));
-
-    renderer.render(scene, camera);
-  });
-};
-
-start();
