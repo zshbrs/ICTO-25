@@ -4,19 +4,19 @@
     <meta charset="utf-8" />
     <title>Earth-Moon AR</title>
 
-    <!-- Підключення MindAR з CDN (включає Three.js всередині) -->
+    <!-- MindAR з CDN — спочатку! -->
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.4/dist/mindar-image-three.prod.js"></script>
 
+    <!-- Стили -->
     <style>
       body { margin: 0; overflow: hidden; }
       #ar-container { width: 100vw; height: 100vh; position: relative; }
     </style>
   </head>
   <body>
-    <!-- Контейнер для AR-сцени -->
     <div id="ar-container"></div>
 
-    <!-- Підключення головного скрипта -->
+    <!-- ПІСЛЯ MindAR -->
     <script src="./main.js"></script>
   </body>
 </html>
