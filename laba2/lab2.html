@@ -1,48 +1,17 @@
 <!DOCTYPE html>
-<html lang="uk">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Земля-Місяць AR</title>
-
-    <script src="https://cdn.jsdelivr.net/npm/three@0.130.0/build/three.min.js"></script>
-
-    <script src="../mindar/mindar-image.prod.js"></script>
-
-    <script type="module" src="../mindar/mindar-image-three.prod.js"></script>
-
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Earth-Moon AR</title>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.4/dist/mindar-image-three.prod.js"></script>
+    <script src="./main.js" defer></script>
     <style>
-        body { margin: 0; overflow: hidden; }
-        .ar-container {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-        }
-        video {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transform: scaleX(-1); /* Відзеркалення для фронтальної камери */
-        }
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
+      body { margin: 0; overflow: hidden; }
+      #ar-container { width: 100vw; height: 100vh; position: relative; }
     </style>
-</head>
-<body>
-    <div class="ar-container">
-        <video muted playsinline></video>
-        <canvas class="webgl-canvas"></canvas>
-    </div>
-
-    <script type="module" src="main.js"></script>
-</body>
+  </head>
+  <body>
+    <div id="ar-container"></div>
+  </body>
 </html>
