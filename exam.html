@@ -1,10 +1,9 @@
+
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
     <title>Тригонометричні функції - Одиничне коло та графік</title>
-    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body { 
             margin: 0; 
@@ -23,6 +22,7 @@
             width: 50%;
             position: relative;
             border-right: 2px solid #333;
+            background: #001122;
         }
         
         .right-panel {
@@ -83,6 +83,15 @@
         .sin-color { color: #3498db; }
         .cos-color { color: #e74c3c; }
         .tan-color { color: #2ecc71; }
+        
+        .circle-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #001122;
+        }
         
         .graph-canvas {
             position: absolute;
@@ -152,49 +161,7 @@
                 <div class="tan-color">tan(θ) = <span id="tanValue">0.000</span></div>
             </div>
 
-            <a-scene embedded style="height: 100vh;" background="color: #001122">
-                <a-light type="ambient" color="#404040"></a-light>
-                <a-light type="directional" position="2 2 2" color="#ffffff"></a-light>
-
-                <!-- Одиничне коло -->
-                <a-ring position="0 0 0" 
-                        radius-inner="1.98" 
-                        radius-outer="2.02" 
-                        color="white" 
-                        rotation="90 0 0">
-                </a-ring>
-
-                <!-- Осі координат -->
-                <a-box position="0 0 0" width="4.5" height="0.02" depth="0.02" color="white"></a-box>
-                <a-box position="0 0 0" width="0.02" height="4.5" depth="0.02" color="white"></a-box>
-
-                <!-- Мітки -->
-                <a-text value="1" position="2.1 0 0.1" scale="0.4 0.4 0.4" color="white"></a-text>
-                <a-text value="-1" position="-2.2 0 0.1" scale="0.4 0.4 0.4" color="white"></a-text>
-                <a-text value="1" position="0.1 2.1 0.1" scale="0.4 0.4 0.4" color="white"></a-text>
-                <a-text value="-1" position="0.1 -2.2 0.1" scale="0.4 0.4 0.4" color="white"></a-text>
-
-                <!-- Точка на колі -->
-                <a-sphere id="circlePoint" position="2 0 0" radius="0.08" color="#ffff00"></a-sphere>
-
-                <!-- Радіус-вектор -->
-                <a-cylinder id="radiusVector" position="1 0 0" radius="0.02" height="2" color="yellow" rotation="0 0 90"></a-cylinder>
-
-                <!-- Лінії функцій -->
-                <a-cylinder id="sinLine" position="2 0 0" radius="0.03" height="0.01" color="#3498db" visible="true"></a-cylinder>
-                <a-cylinder id="cosLine" position="1 0 0" radius="0.03" height="2" color="#e74c3c" rotation="0 0 90" visible="true"></a-cylinder>
-                <a-cylinder id="tanLine" position="2 0 0" radius="0.02" height="0.01" color="#2ecc71" visible="true"></a-cylinder>
-
-                <!-- Допоміжна лінія для тангенса -->
-                <a-cylinder position="2 0 0" radius="0.01" height="6" color="#666666" opacity="0.3"></a-cylinder>
-
-                <!-- Підписи -->
-                <a-text id="sinLabel" value="sin" position="2.3 0 0.1" scale="0.3 0.3 0.3" color="#3498db"></a-text>
-                <a-text id="cosLabel" value="cos" position="1 -0.25 0.1" scale="0.3 0.3 0.3" color="#e74c3c"></a-text>
-                <a-text id="tanLabel" value="tan" position="2.3 0 0.1" scale="0.3 0.3 0.3" color="#2ecc71"></a-text>
-
-                <a-camera position="0 0 6" look-controls="enabled: true" wasd-controls="enabled: false"></a-camera>
-            </a-scene>
+            <canvas id="circleCanvas" class="circle-canvas"></canvas>
         </div>
 
         <!-- Права панель - графік -->
@@ -214,11 +181,6 @@
         let currentAngle = 0;
         let isAnimating = false;
         let animationId;
-        let graphData = {
-            sin: [],
-            cos: [],
-            tan: []
-        };
         let activeGraphs = { sin: true, cos: false, tan: false };
 
         // DOM елементи
@@ -236,128 +198,422 @@
         const showCos = document.getElementById('showCos');
         const showTan = document.getElementById('showTan');
 
-        // A-Frame елементи
-        const circlePoint = document.getElementById('circlePoint');
-        const radiusVector = document.getElementById('radiusVector');
-        const sinLine = document.getElementById('sinLine');
-        const cosLine = document.getElementById('cosLine');
-        const tanLine = document.getElementById('tanLine');
-        const sinLabel = document.getElementById('sinLabel');
-        const cosLabel = document.getElementById('cosLabel');
-        const tanLabel = document.getElementById('tanLabel');
-
-        // Графік
-        const canvas = document.getElementById('graphCanvas');
-        const ctx = canvas.getContext('2d');
+        // Canvas елементи
+        const circleCanvas = document.getElementById('circleCanvas');
+        const circleCtx = circleCanvas.getContext('2d');
+        const graphCanvas = document.getElementById('graphCanvas');
+        const graphCtx = graphCanvas.getContext('2d');
         
-        function resizeCanvas() {
-            canvas.width = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
+        // Кнопки графіків
+        const graphSinBtn = document.getElementById('graphSin');
+        const graphCosBtn = document.getElementById('graphCos');
+        const graphTanBtn = document.getElementById('graphTan');
+        const clearGraphBtn = document.getElementById('clearGraph');
+        
+        function resizeCanvases() {
+            circleCanvas.width = circleCanvas.offsetWidth;
+            circleCanvas.height = circleCanvas.offsetHeight;
+            graphCanvas.width = graphCanvas.offsetWidth;
+            graphCanvas.height = graphCanvas.offsetHeight;
+            drawCircle();
+            drawGraph();
         }
         
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
+        window.addEventListener('resize', resizeCanvases);
+        resizeCanvases();
+
+        function drawCircle() {
+            const ctx = circleCtx;
+            const centerX = circleCanvas.width / 2;
+            const centerY = circleCanvas.height / 2;
+            
+            // Збільшуємо відступи для кращого відображення
+            const maxRadius = Math.min(centerX - 100, centerY - 100);
+            const radius = Math.max(80, maxRadius * 0.4); // Мінімальний радіус 80px
+            
+            ctx.clearRect(0, 0, circleCanvas.width, circleCanvas.height);
+            
+            // Фон
+            ctx.fillStyle = '#001122';
+            ctx.fillRect(0, 0, circleCanvas.width, circleCanvas.height);
+            
+            // Одиничне коло
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            // Осі координат
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1;
+            
+            // X-вісь
+            ctx.beginPath();
+            ctx.moveTo(centerX - radius * 1.4, centerY);
+            ctx.lineTo(centerX + radius * 1.4, centerY);
+            ctx.stroke();
+            
+            // Y-вісь
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY - radius * 1.4);
+            ctx.lineTo(centerX, centerY + radius * 1.4);
+            ctx.stroke();
+            
+            // Градуси навколо кола
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '11px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            const degrees = [0, 30, 45, 60, 90, 120, 135, 150, 180, 210, 225, 240, 270, 300, 315, 330];
+            for (let deg of degrees) {
+                const rad = (deg * Math.PI) / 180;
+                const labelRadius = radius + 30;
+                const x = centerX + Math.cos(-rad) * labelRadius;
+                const y = centerY + Math.sin(-rad) * labelRadius;
+                
+                // Перевіряємо, чи підпис поміщається на екрані
+                if (x > 20 && x < circleCanvas.width - 20 && y > 20 && y < circleCanvas.height - 20) {
+                    ctx.fillText(deg + '°', x, y);
+                }
+            }
+            
+            // Мітки на осях
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillText('1', centerX + radius + 5, centerY + 5);
+            ctx.fillText('-1', centerX - radius - 20, centerY + 5);
+            ctx.fillText('1', centerX + 5, centerY - radius - 5);
+            ctx.fillText('-1', centerX + 5, centerY + radius + 15);
+            
+            // Розрахунок позицій
+            const angleRad = (currentAngle * Math.PI) / 180;
+            const cosVal = Math.cos(angleRad);
+            const sinVal = Math.sin(angleRad);
+            const tanVal = Math.tan(angleRad);
+            
+            const pointX = centerX + cosVal * radius;
+            const pointY = centerY - sinVal * radius;
+            
+            // Проекції на осі
+            const projX = centerX + cosVal * radius;
+            const projY = centerY - sinVal * radius;
+            
+            // Малювання ліній функцій
+            if (showCos.checked) {
+                // Косинус - горизонтальна лінія
+                ctx.strokeStyle = '#e74c3c';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(projX, centerY);
+                ctx.stroke();
+                
+                // Вертикальна допоміжна лінія
+                ctx.strokeStyle = '#e74c3c';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([3, 3]);
+                ctx.beginPath();
+                ctx.moveTo(pointX, pointY);
+                ctx.lineTo(pointX, centerY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // Точка проекції на X-осі
+                ctx.fillStyle = '#e74c3c';
+                ctx.beginPath();
+                ctx.arc(projX, centerY, 4, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Підпис косинуса
+                ctx.fillStyle = '#e74c3c';
+                ctx.font = '12px Arial';
+                const cosTextX = centerX + (projX - centerX) / 2;
+                const cosTextY = centerY - 15;
+                ctx.fillText('cos(θ)', cosTextX - 15, cosTextY);
+            }
+            
+            if (showSin.checked) {
+                // Синус - вертикальна лінія
+                ctx.strokeStyle = '#3498db';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(centerX, projY);
+                ctx.stroke();
+                
+                // Горизонтальна допоміжна лінія
+                ctx.strokeStyle = '#3498db';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([3, 3]);
+                ctx.beginPath();
+                ctx.moveTo(pointX, pointY);
+                ctx.lineTo(centerX, pointY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // Точка проекції на Y-осі
+                ctx.fillStyle = '#3498db';
+                ctx.beginPath();
+                ctx.arc(centerX, projY, 4, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Підпис синуса
+                ctx.fillStyle = '#3498db';
+                ctx.font = '12px Arial';
+                const sinTextX = centerX + 10;
+                const sinTextY = centerY + (projY - centerY) / 2;
+                ctx.fillText('sin(θ)', sinTextX, sinTextY);
+            }
+            
+            if (showTan.checked) {
+                // Тангенс
+                if (Math.abs(cosVal) > 0.001) {
+                    const tanX = centerX + radius;
+                    const tanY = centerY - tanVal * radius;
+                    
+                    const maxTanDisplay = 5;
+                    if (Math.abs(tanVal) <= maxTanDisplay && 
+                        tanY > 20 && tanY < circleCanvas.height - 20) {
+                        
+                        // Вертикальна дотична лінія
+                        ctx.strokeStyle = '#666666';
+                        ctx.lineWidth = 1;
+                        ctx.setLineDash([5, 5]);
+                        ctx.beginPath();
+                        ctx.moveTo(tanX, Math.max(20, centerY - radius * 1.3));
+                        ctx.lineTo(tanX, Math.min(circleCanvas.height - 20, centerY + radius * 1.3));
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                        
+                        // Лінія від центру до точки на дотичній
+                        ctx.strokeStyle = '#2ecc71';
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([2, 2]);
+                        ctx.beginPath();
+                        ctx.moveTo(centerX, centerY);
+                        ctx.lineTo(tanX, tanY);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                        
+                        // Тангенс на дотичній
+                        ctx.strokeStyle = '#2ecc71';
+                        ctx.lineWidth = 4;
+                        ctx.beginPath();
+                        ctx.moveTo(tanX, centerY);
+                        ctx.lineTo(tanX, tanY);
+                        ctx.stroke();
+                        
+                        // Точка на дотичній
+                        ctx.fillStyle = '#2ecc71';
+                        ctx.beginPath();
+                        ctx.arc(tanX, tanY, 4, 0, 2 * Math.PI);
+                        ctx.fill();
+                        
+                        // Підпис тангенса
+                        ctx.fillStyle = '#2ecc71';
+                        ctx.font = '12px Arial';
+                        const labelY = tanY > centerY ? tanY + 15 : tanY - 5;
+                        if (tanX + 50 < circleCanvas.width) {
+                            ctx.fillText('tan(θ)', tanX + 5, labelY);
+                        }
+                    }
+                } else {
+                    // Асимптота
+                    const tanX = centerX + radius;
+                    if (tanX + 50 < circleCanvas.width) {
+                        ctx.strokeStyle = '#ff6b6b';
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([3, 3]);
+                        ctx.beginPath();
+                        ctx.moveTo(tanX, Math.max(20, centerY - radius * 1.3));
+                        ctx.lineTo(tanX, Math.min(circleCanvas.height - 20, centerY + radius * 1.3));
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                        
+                        ctx.fillStyle = '#ff6b6b';
+                        ctx.font = '12px Arial';
+                        ctx.fillText('tan(θ) = ∞', tanX + 5, centerY);
+                    }
+                }
+            }
+            
+            // Радіус-вектор
+            ctx.strokeStyle = '#ffff00';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(pointX, pointY);
+            ctx.stroke();
+            
+            // Точка на колі
+            ctx.fillStyle = '#ffff00';
+            ctx.beginPath();
+            ctx.arc(pointX, pointY, 6, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Кут (дуга)
+            ctx.strokeStyle = '#ffff00';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 30, 0, -angleRad, angleRad < 0);
+            ctx.stroke();
+        }
 
         function drawGraph() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const ctx = graphCtx;
+            ctx.clearRect(0, 0, graphCanvas.width, graphCanvas.height);
             
-            const centerY = canvas.height / 2;
-            const scaleX = canvas.width / (4 * Math.PI); // 2π в кожну сторону
-            const scaleY = canvas.height / 4; // від -2 до 2
+            const centerY = graphCanvas.height / 2;
+            const centerX = graphCanvas.width / 2;
+            const scaleX = graphCanvas.width / (6 * Math.PI);
+            const scaleY = graphCanvas.height / 6;
             
             // Сітка
             ctx.strokeStyle = '#333';
             ctx.lineWidth = 1;
             
             // Горизонтальні лінії
-            for (let i = -2; i <= 2; i++) {
-                const y = centerY - i * scaleY / 2;
+            for (let i = -3; i <= 3; i++) {
+                const y = centerY - i * scaleY / 3;
                 ctx.beginPath();
                 ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width, y);
+                ctx.lineTo(graphCanvas.width, y);
                 ctx.stroke();
             }
             
-            // Вертикальні лінії (кожні π/2)
-            for (let i = -4; i <= 4; i++) {
-                const x = canvas.width / 2 + i * scaleX * Math.PI / 2;
-                if (x >= 0 && x <= canvas.width) {
+            // Вертикальні лінії
+            const piSteps = [-3, -2.5, -2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2, 2.5, 3];
+            for (let step of piSteps) {
+                const x = centerX + step * scaleX * Math.PI;
+                if (x >= 0 && x <= graphCanvas.width) {
+                    ctx.strokeStyle = '#333';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([]);
                     ctx.beginPath();
                     ctx.moveTo(x, 0);
-                    ctx.lineTo(x, canvas.height);
+                    ctx.lineTo(x, graphCanvas.height);
                     ctx.stroke();
+                }
+            }
+            
+            // ВИПРАВЛЕНО: Асимптоти для тангенса в правильних місцях
+            if (activeGraphs.tan) {
+                // Асимптоти тангенса в точках π/2 + πk
+                const asymptotes = [-2.5, -1.5, -0.5, 0.5, 1.5, 2.5]; // Це значення π/2, 3π/2, 5π/2 тощо
+                for (let asymptote of asymptotes) {
+                    const x = centerX + asymptote * scaleX * Math.PI;
+                    if (x >= 0 && x <= graphCanvas.width) {
+                        ctx.strokeStyle = '#ff6b6b';
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([5, 5]);
+                        ctx.beginPath();
+                        ctx.moveTo(x, 0);
+                        ctx.lineTo(x, graphCanvas.height);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
                 }
             }
             
             // Осі
             ctx.strokeStyle = '#666';
             ctx.lineWidth = 2;
+            ctx.setLineDash([]);
             
             // X-вісь
             ctx.beginPath();
             ctx.moveTo(0, centerY);
-            ctx.lineTo(canvas.width, centerY);
+            ctx.lineTo(graphCanvas.width, centerY);
             ctx.stroke();
             
             // Y-вісь
             ctx.beginPath();
-            ctx.moveTo(canvas.width / 2, 0);
-            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.moveTo(centerX, 0);
+            ctx.lineTo(centerX, graphCanvas.height);
             ctx.stroke();
             
-            // Підписи
+            // Підписи осей
             ctx.fillStyle = '#ccc';
             ctx.font = '12px Arial';
-            ctx.fillText('0', canvas.width / 2 + 5, centerY - 5);
-            ctx.fillText('π', canvas.width / 2 + scaleX * Math.PI + 5, centerY - 5);
-            ctx.fillText('-π', canvas.width / 2 - scaleX * Math.PI + 5, centerY - 5);
-            ctx.fillText('1', canvas.width / 2 + 5, centerY - scaleY / 2);
-            ctx.fillText('-1', canvas.width / 2 + 5, centerY + scaleY / 2);
+            ctx.textAlign = 'center';
+            
+            // Підписи на X-осі
+            const labels = [
+                {step: -3, label: '-3π'},
+                {step: -2, label: '-2π'},
+                {step: -1.5, label: '-3π/2'},
+                {step: -1, label: '-π'},
+                {step: -0.5, label: '-π/2'},
+                {step: 0, label: '0'},
+                {step: 0.5, label: 'π/2'},
+                {step: 1, label: 'π'},
+                {step: 1.5, label: '3π/2'},
+                {step: 2, label: '2π'},
+                {step: 3, label: '3π'}
+            ];
+            
+            for (let {step, label} of labels) {
+                const x = centerX + step * scaleX * Math.PI;
+                if (x >= 20 && x <= graphCanvas.width - 20) {
+                    ctx.fillText(label, x, centerY + 15);
+                }
+            }
+            
+            // Підписи на Y-осі
+            ctx.textAlign = 'left';
+            ctx.fillText('1', centerX + 5, centerY - scaleY / 3 + 4);
+            ctx.fillText('-1', centerX + 5, centerY + scaleY / 3 + 4);
+            ctx.fillText('2', centerX + 5, centerY - 2 * scaleY / 3 + 4);
+            ctx.fillText('-2', centerX + 5, centerY + 2 * scaleY / 3 + 4);
             
             // Малювання графіків
             ctx.lineWidth = 2;
             
             if (activeGraphs.sin) {
                 ctx.strokeStyle = '#3498db';
-                drawFunction(x => Math.sin(x), scaleX, scaleY, centerY);
+                drawFunction(x => Math.sin(x), scaleX, scaleY, centerY, centerX, 3);
             }
             
             if (activeGraphs.cos) {
                 ctx.strokeStyle = '#e74c3c';
-                drawFunction(x => Math.cos(x), scaleX, scaleY, centerY);
+                drawFunction(x => Math.cos(x), scaleX, scaleY, centerY, centerX, 3);
             }
             
             if (activeGraphs.tan) {
                 ctx.strokeStyle = '#2ecc71';
-                drawTangentFunction(scaleX, scaleY, centerY);
+                drawTangentFunction(scaleX, scaleY, centerY, centerX);
             }
             
             // Поточна точка
             const angleRad = (currentAngle * Math.PI) / 180;
-            const x = canvas.width / 2 + angleRad * scaleX;
+            const x = centerX + angleRad * scaleX;
             
-            if (x >= 0 && x <= canvas.width) {
+            if (x >= 0 && x <= graphCanvas.width) {
                 ctx.fillStyle = '#ffff00';
-                ctx.beginPath();
                 
                 if (activeGraphs.sin) {
-                    const y = centerY - Math.sin(angleRad) * scaleY / 2;
-                    ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                    const y = centerY - Math.sin(angleRad) * scaleY / 3;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 5, 0, 2 * Math.PI);
                     ctx.fill();
                 }
                 
                 if (activeGraphs.cos) {
-                    const y = centerY - Math.cos(angleRad) * scaleY / 2;
-                    ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                    const y = centerY - Math.cos(angleRad) * scaleY / 3;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 5, 0, 2 * Math.PI);
                     ctx.fill();
                 }
                 
                 if (activeGraphs.tan && Math.abs(Math.cos(angleRad)) > 0.01) {
                     const tanVal = Math.tan(angleRad);
                     if (Math.abs(tanVal) < 10) {
-                        const y = centerY - tanVal * scaleY / 2;
-                        if (y >= 0 && y <= canvas.height) {
-                            ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                        const y = centerY - tanVal * scaleY / 3;
+                        if (y >= 0 && y <= graphCanvas.height) {
+                            ctx.beginPath();
+                            ctx.arc(x, y, 5, 0, 2 * Math.PI);
                             ctx.fill();
                         }
                     }
@@ -365,46 +621,73 @@
             }
         }
         
-        function drawFunction(func, scaleX, scaleY, centerY) {
-            ctx.beginPath();
+        function drawFunction(func, scaleX, scaleY, centerY, centerX, scale) {
+            graphCtx.beginPath();
             let started = false;
             
-            for (let pixel = 0; pixel < canvas.width; pixel++) {
-                const x = (pixel - canvas.width / 2) / scaleX;
-                const y = centerY - func(x) * scaleY / 2;
+            for (let pixel = 0; pixel < graphCanvas.width; pixel++) {
+                const x = (pixel - centerX) / scaleX;
+                const y = centerY - func(x) * scaleY / scale;
                 
                 if (!started) {
-                    ctx.moveTo(pixel, y);
+                    graphCtx.moveTo(pixel, y);
                     started = true;
                 } else {
-                    ctx.lineTo(pixel, y);
+                    graphCtx.lineTo(pixel, y);
                 }
             }
             
-            ctx.stroke();
+            graphCtx.stroke();
         }
         
-        function drawTangentFunction(scaleX, scaleY, centerY) {
-            ctx.beginPath();
+        function drawTangentFunction(scaleX, scaleY, centerY, centerX) {
+            graphCtx.beginPath();
+            let pathStarted = false;
             
-            for (let pixel = 0; pixel < canvas.width; pixel++) {
-                const x = (pixel - canvas.width / 2) / scaleX;
-                const tanVal = Math.tan(x);
+            for (let pixel = 0; pixel < graphCanvas.width; pixel++) {
+                const x = (pixel - centerX) / scaleX;
+                const cosVal = Math.cos(x);
                 
-                if (Math.abs(tanVal) < 10 && Math.abs(Math.cos(x)) > 0.01) {
-                    const y = centerY - tanVal * scaleY / 2;
+                // Перевіряємо, чи не знаходимося біля асимптоти
+                const nearAsymptote = Math.abs(cosVal) < 0.01;
+                
+                if (!nearAsymptote) {
+                    const tanVal = Math.tan(x);
                     
-                    if (y >= 0 && y <= canvas.height) {
-                        if (pixel === 0 || Math.abs(Math.tan((pixel - 1 - canvas.width / 2) / scaleX)) > 10) {
-                            ctx.moveTo(pixel, y);
-                        } else {
-                            ctx.lineTo(pixel, y);
+                    // Обмежуємо значення для кращого відображення
+                    if (Math.abs(tanVal) < 20) {
+                        const y = centerY - tanVal * scaleY / 3;
+                        
+                        if (y >= -100 && y <= graphCanvas.height + 100) {
+                            if (!pathStarted) {
+                                graphCtx.moveTo(pixel, y);
+                                pathStarted = true;
+                            } else {
+                                graphCtx.lineTo(pixel, y);
+                            }
                         }
+                    } else {
+                        // Якщо значення занадто велике, припиняємо поточний шлях
+                        if (pathStarted) {
+                            graphCtx.stroke();
+                            graphCtx.beginPath();
+                            pathStarted = false;
+                        }
+                    }
+                } else {
+                    // Біля асимптоти - припиняємо поточний шлях
+                    if (pathStarted) {
+                        graphCtx.stroke();
+                        graphCtx.beginPath();
+                        pathStarted = false;
                     }
                 }
             }
             
-            ctx.stroke();
+            // Завершуємо останній шлях, якщо він існує
+            if (pathStarted) {
+                graphCtx.stroke();
+            }
         }
 
         function updateTrigonometry(angleDegrees) {
@@ -415,59 +698,25 @@
             const cosVal = Math.cos(angleRad);
             const tanVal = Math.tan(angleRad);
             
-            // Позиція точки на колі
-            const x = cosVal * 2;
-            const y = sinVal * 2;
-            
-            // Оновлення A-Frame елементів
-            circlePoint.setAttribute('position', `${x} ${y} 0`);
-            
-            const vectorX = x / 2;
-            const vectorY = y / 2;
-            const vectorAngle = -angleDegrees;
-            
-            radiusVector.setAttribute('position', `${vectorX} ${vectorY} 0`);
-            radiusVector.setAttribute('rotation', `0 0 ${vectorAngle}`);
-            
-            // Оновлення ліній
-            if (showSin.checked && Math.abs(sinVal) > 0.001) {
-                sinLine.setAttribute('position', `${x} ${y/2} 0`);
-                sinLine.setAttribute('height', Math.abs(y));
-                sinLine.setAttribute('visible', true);
-                sinLabel.setAttribute('position', `${x + 0.3} ${y} 0.1`);
-            } else {
-                sinLine.setAttribute('visible', false);
-            }
-            
-            if (showCos.checked && Math.abs(cosVal) > 0.001) {
-                cosLine.setAttribute('position', `${x/2} 0 0`);
-                cosLine.setAttribute('height', Math.abs(x));
-                cosLine.setAttribute('visible', true);
-                cosLabel.setAttribute('position', `${x/2} -0.3 0.1`);
-            } else {
-                cosLine.setAttribute('visible', false);
-            }
-            
-            if (showTan.checked && Math.abs(cosVal) > 0.001 && Math.abs(tanVal) < 20) {
-                const tanY = tanVal * 2;
-                tanLine.setAttribute('position', `2 ${tanY/2} 0`);
-                tanLine.setAttribute('height', Math.abs(tanY));
-                tanLine.setAttribute('visible', true);
-                tanLabel.setAttribute('position', `2.3 ${tanY} 0.1`);
-            } else {
-                tanLine.setAttribute('visible', false);
-            }
-            
             // Оновлення значень
             angleDisplay.textContent = `${angleDegrees}°`;
             radianDisplay.textContent = angleRad.toFixed(2);
             sinValue.textContent = sinVal.toFixed(3);
             cosValue.textContent = cosVal.toFixed(3);
-            tanValue.textContent = Math.abs(tanVal) < 100 ? tanVal.toFixed(3) : '∞';
+            
+            // Спеціальна обробка для тангенса
+            if (Math.abs(cosVal) < 0.001) {
+                tanValue.textContent = '∞';
+            } else if (Math.abs(tanVal) > 1000) {
+                tanValue.textContent = tanVal > 0 ? '+∞' : '-∞';
+            } else {
+                tanValue.textContent = tanVal.toFixed(3);
+            }
             
             angleSlider.value = angleDegrees;
             
-            // Оновлення графіка
+            // Перемалювання
+            drawCircle();
             drawGraph();
         }
 
@@ -503,55 +752,48 @@
             updateTrigonometry(0);
         });
 
-        // Обробники для відображення функцій
+        // Обробники для відображення функцій на колі
         showSin.addEventListener('change', () => {
-            sinLine.setAttribute('visible', showSin.checked);
-            updateTrigonometry(currentAngle);
+            drawCircle();
         });
 
         showCos.addEventListener('change', () => {
-            cosLine.setAttribute('visible', showCos.checked);
-            updateTrigonometry(currentAngle);
+            drawCircle();
         });
 
         showTan.addEventListener('change', () => {
-            tanLine.setAttribute('visible', showTan.checked);
-            updateTrigonometry(currentAngle);
+            drawCircle();
         });
 
-        // Обробники для графіка
-        document.getElementById('graphSin').addEventListener('click', (e) => {
+        // Обробники для кнопок графіків
+        graphSinBtn.addEventListener('click', () => {
             activeGraphs.sin = !activeGraphs.sin;
-            e.target.classList.toggle('active', activeGraphs.sin);
+            graphSinBtn.classList.toggle('active', activeGraphs.sin);
             drawGraph();
         });
 
-        document.getElementById('graphCos').addEventListener('click', (e) => {
+        graphCosBtn.addEventListener('click', () => {
             activeGraphs.cos = !activeGraphs.cos;
-            e.target.classList.toggle('active', activeGraphs.cos);
+            graphCosBtn.classList.toggle('active', activeGraphs.cos);
             drawGraph();
         });
 
-        document.getElementById('graphTan').addEventListener('click', (e) => {
+        graphTanBtn.addEventListener('click', () => {
             activeGraphs.tan = !activeGraphs.tan;
-            e.target.classList.toggle('active', activeGraphs.tan);
+            graphTanBtn.classList.toggle('active', activeGraphs.tan);
             drawGraph();
         });
 
-        document.getElementById('clearGraph').addEventListener('click', () => {
+        clearGraphBtn.addEventListener('click', () => {
             activeGraphs = { sin: false, cos: false, tan: false };
-            document.querySelectorAll('.graph-btn').forEach(btn => btn.classList.remove('active'));
+            graphSinBtn.classList.remove('active');
+            graphCosBtn.classList.remove('active');
+            graphTanBtn.classList.remove('active');
             drawGraph();
         });
 
         // Ініціалізація
         updateTrigonometry(0);
-        
-        // Початкове малювання графіка
-        setTimeout(() => {
-            resizeCanvas();
-            drawGraph();
-        }, 100);
     </script>
 </body>
 </html>
