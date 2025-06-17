@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>3D Тригонометричні функції - A-Frame</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.4.0/aframe.min.js"></script>
+    <style>
+        body { 
+            margin: 0; 
+            font-family: 'Arial', sans-serif; 
+            background: #001122;
+            overflow: hidden;
+        }
+        
+        .ui-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        
+        .controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            min-width: 280px;
+            pointer-events: all;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .values {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            pointer-events: all;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .mode-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 12px;
+            pointer-events: all;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        .slider {
+            width: 220px;
+            margin: 8px 0;
+            accent-color: #3498db;
+        }
+        
+        .function-selector label {
+            display: block;
+            margin: 8px 0;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .function-selector label:hover {
+            color: #ccc;
+        }
+        
+        .function-selector input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+        
+        button {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 3px;
+            transition: all 0.3s;
+            font-size: 12px;
+        }
+        
+        button:hover {
+            background: linear-gradient(135deg, #34495e, #2c3e50);
+            transform: translateY(-1px);
+        }
+        
+        button.active {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+        }
+        
+        .sin-color { color: #3498db; }
+        .cos-color { color: #e74c3c; }
+        .tan-color { color: #2ecc71; }
+        
+        .help-text {
+            font-size: 11px;
+            color: #aaa;
+            margin-top: 10px;
+            line-height: 1.4;
+        }
+        
+        .scene-container {
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .controls, .values, .mode-controls {
+                font-size: 12px;
+                padding: 15px;
+                min-width: 240px;
+            }
+            .slider {
+                width: 180px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="ui-container">
+        <div class="controls">
+            <div class="control-group">
+                <label>Кут: <span id="angleDisplay">0°</span> (<span id="radianDisplay">0.00</span> рад)</label>
+                <input type="range" id="angleSlider" class="slider" min="-720" max="720" value="0" step="5">
+            </div>
+            
+            <div class="function-selector">
+                <label><input type="checkbox" id="showSin" checked> <span class="sin-color">sin(θ) проекція</span></label>
+                <label><input type="checkbox" id="showCos" checked> <span class="cos-color">cos(θ) проекція</span></label>
+                <label><input type="checkbox" id="showTan" checked> <span class="tan-color">tan(θ) лінія</span></label>
+            </div>
+            
+            <div class="control-group">
+                <input type="checkbox" id="animateCheck"> Автоматична анімація
+                <button id="resetBtn">Скинути</button>
+            </div>
+            
+            <div class="help-text">
+                🖱️ Клік і перетягніть для обертання<br>
+                📱 Торкніться і рухайте<br>
+                🔍 Коліщатко для зуму<br>
+                ⌨️ 1/2/3 - режими, Пробіл - анімація<br>
+                ← → - покрокове керування
+            </div>
+        </div>
+
+        <div class="values">
+            <div class="sin-color">sin(θ) = <span id="sinValue">0.000</span></div>
+            <div class="cos-color">cos(θ) = <span id="cosValue">1.000</span></div>
+            <div class="tan-color">tan(θ) = <span id="tanValue">0.000</span></div>
+        </div>
+
+        <div class="mode-controls">
+            <div>Режим перегляду:</div>
+            <button id="circleMode" class="active">Одиничне коло</button>
+            <button id="graphMode">3D Графік</button>
+            <button id="combinedMode">Поєднаний</button>
+        </div>
+    </div>
+
+    <div class="scene-container">
+        <a-scene 
+            id="scene"
+            background="color: #001122"
+            vr-mode-ui="enabled: false"
+            device-orientation-permission-ui="enabled: false"
+            embedded
+            renderer="antialias: true; colorManagement: true; sortObjects: true;">
+            
+            <!-- Освітлення -->
+            <a-light type="ambient" color="#404040" intensity="0.5"></a-light>
+            <a-light type="directional" position="2 4 5" intensity="0.7"></a-light>
+
+            <!-- Камера -->
+            <a-entity id="cameraRig" position="0 0 0">
+                <a-camera 
+                    id="camera"
+                    position="0 0 8"
+                    wasd-controls="enabled: false"
+                    look-controls="enabled: false">
+                </a-camera>
+            </a-entity>
+
+            <!-- Одиничне коло та координатна система -->
+            <a-entity id="circleGroup" visible="true">
+                <!-- Координатні осі -->
+                <a-cylinder 
+                    position="0 0 0" 
+                    radius="0.02" 
+                    height="6" 
+                    rotation="0 0 90" 
+                    color="#ffffff" 
+                    opacity="0.6">
+                </a-cylinder>
+                <a-cylinder 
+                    position="0 0 0" 
+                    radius="0.02" 
+                    height="6" 
+                    rotation="0 0 0" 
+                    color="#ffffff" 
+                    opacity="0.6">
+                </a-cylinder>
+                
+                <!-- Одиничне коло -->
+                <a-torus 
+                    id="unitCircle"
+                    position="0 0 0" 
+                    radius-outer="2" 
+                    radius-tubular="0.04" 
+                    color="#ffffff" 
+                    opacity="0.8">
+                </a-torus>
+
+                <!-- Точка на колі -->
+                <a-sphere 
+                    id="circlePoint" 
+                    position="2 0 0" 
+                    radius="0.1" 
+                    color="#ffff00"
+                    material="emissive: #ffff00; emissiveIntensity: 0.3">
+                </a-sphere>
+
+                <!-- Радіус-вектор -->
+                <a-cylinder 
+                    id="radiusVector"
+                    position="1 0 0" 
+                    radius="0.03" 
+                    height="2" 
+                    rotation="0 0 90" 
+                    color="#ffff00" 
+                    opacity="0.8">
+                </a-cylinder>
+
+                <!-- Sin проекція -->
+                <a-cylinder 
+                    id="sinLine"
+                    position="0 0 0" 
+                    radius="0.04" 
+                    height="0" 
+                    rotation="0 0 0" 
+                    color="#3498db" 
+                    visible="true">
+                </a-cylinder>
+
+                <!-- Cos проекція -->
+                <a-cylinder 
+                    id="cosLine"
+                    position="0 0 0" 
+                    radius="0.04" 
+                    height="0" 
+                    rotation="0 0 90" 
+                    color="#e74c3c" 
+                    visible="true">
+                </a-cylinder>
+
+                <!-- Tan лінія -->
+                <a-cylinder 
+                    id="tanLine"
+                    position="2 0 0" 
+                    radius="0.03" 
+                    height="0" 
+                    rotation="0 0 0" 
+                    color="#2ecc71" 
+                    visible="true">
+                </a-cylinder>
+
+                <!-- Дотична лінія -->
+                <a-cylinder 
+                    position="2 0 0" 
+                    radius="0.01" 
+                    height="10" 
+                    rotation="0 0 0" 
+                    color="#666666" 
+                    opacity="0.3">
+                </a-cylinder>
+            </a-entity>
+
+            <!-- 3D Графіки -->
+            <a-entity id="graphGroup" visible="false">
+                <!-- Координатні осі для графіків -->
+                <a-cylinder position="0 0 0" radius="0.02" height="16" rotation="0 0 90" color="#666666" opacity="0.5"></a-cylinder>
+                <a-cylinder position="0 0 0" radius="0.02" height="8" rotation="0 0 0" color="#666666" opacity="0.5"></a-cylinder>
+                <a-cylinder position="0 0 0" radius="0.02" height="8" rotation="90 0 0" color="#666666" opacity="0.5"></a-cylinder>
+
+                <!-- Графіки функцій -->
+                <a-entity id="sinGraph"></a-entity>
+                <a-entity id="cosGraph"></a-entity>
+                <a-entity id="tanGraph"></a-entity>
+            </a-entity>
+
+            <!-- Поєднаний режим -->
+            <a-entity id="combinedGroup" visible="false">
+                <!-- Мале коло зліва -->
+                <a-entity id="smallCircle" position="-3 0 0" scale="0.6 0.6 0.6">
+                    <a-torus radius-outer="2" radius-tubular="0.06" color="#ffffff" opacity="0.7"></a-torus>
+                    <a-sphere id="smallCirclePoint" position="2 0 0" radius="0.15" color="#ffff00" material="emissive: #ffff00; emissiveIntensity: 0.2"></a-sphere>
+                    <a-cylinder id="smallRadiusVector" position="1 0 0" radius="0.04" height="2" rotation="0 0 90" color="#ffff00"></a-cylinder>
+                    <a-cylinder id="smallSinLine" position="0 0 0" radius="0.05" height="0" rotation="0 0 0" color="#3498db"></a-cylinder>
+                    <a-cylinder id="smallCosLine" position="0 0 0" radius="0.05" height="0" rotation="0 0 90" color="#e74c3c"></a-cylinder>
+                </a-entity>
+                
+                <!-- Графіки справа -->
+                <a-entity id="graphPlanes" position="2 0 0">
+                    <a-entity id="sinCurve"></a-entity>
+                    <a-entity id="cosCurve"></a-entity>
+                </a-entity>
+            </a-entity>
+
+            <!-- Текстові лейбли -->
+            <a-text 
+                id="sinLabel"
+                value="sin(θ)" 
+                position="0 -2.5 0" 
+                align="center" 
+                color="#3498db" 
+                scale="1.2 1.2 1.2">
+            </a-text>
+            <a-text 
+                id="cosLabel"
+                value="cos(θ)" 
+                position="-2.5 0 0" 
+                align="center" 
+                color="#e74c3c" 
+                scale="1.2 1.2 1.2">
+            </a-text>
+
+        </a-scene>
+    </div>
+
+    <script>
+        // Глобальні змінні
+        let currentAngle = 0;
+        let isAnimating = false;
+        let animationId;
+        let currentMode = 'circle';
+        
+        // Змінні для камери
+        let cameraRotation = { x: 0, y: 0 };
+        let cameraDistance = 8;
+        let isMouseDown = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        
+        // DOM елементи
+        const angleSlider = document.getElementById('angleSlider');
+        const angleDisplay = document.getElementById('angleDisplay');
+        const radianDisplay = document.getElementById('radianDisplay');
+        const animateCheck = document.getElementById('animateCheck');
+        const resetBtn = document.getElementById('resetBtn');
+        
+        const sinValue = document.getElementById('sinValue');
+        const cosValue = document.getElementById('cosValue');
+        const tanValue = document.getElementById('tanValue');
+
+        const showSin = document.getElementById('showSin');
+        const showCos = document.getElementById('showCos');
+        const showTan = document.getElementById('showTan');
+
+        // A-Frame елементи
+        const scene = document.getElementById('scene');
+        const camera = document.getElementById('camera');
+        const cameraRig = document.getElementById('cameraRig');
+        const circlePoint = document.getElementById('circlePoint');
+        const radiusVector = document.getElementById('radiusVector');
+        const sinLine = document.getElementById('sinLine');
+        const cosLine = document.getElementById('cosLine');
+        const tanLine = document.getElementById('tanLine');
+        
+        const circleGroup = document.getElementById('circleGroup');
+        const graphGroup = document.getElementById('graphGroup');
+        const combinedGroup = document.getElementById('combinedGroup');
+
+        // Кнопки режимів
+        const circleModeBtn = document.getElementById('circleMode');
+        const graphModeBtn = document.getElementById('graphMode');
+        const combinedModeBtn = document.getElementById('combinedMode');
+
+        // Ініціалізація орбітальних контролів
+        function initOrbitControls() {
+            // Mouse controls
+            scene.addEventListener('mousedown', handleMouseDown);
+            document.addEventListener('mouseup', handleMouseUp);
+            document.addEventListener('mousemove', handleMouseMove);
+            scene.addEventListener('wheel', handleWheel, { passive: false });
+
+            // Touch controls
+            scene.addEventListener('touchstart', handleTouchStart, { passive: false });
+            scene.addEventListener('touchmove', handleTouchMove, { passive: false });
+            scene.addEventListener('touchend', handleTouchEnd);
+        }
+
+        function handleMouseDown(e) {
+            if (e.target.closest('.ui-container')) return;
+            isMouseDown = true;
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+        }
+
+        function handleMouseUp() {
+            isMouseDown = false;
+        }
+
+        function handleMouseMove(e) {
+            if (!isMouseDown || e.target.closest('.ui-container')) return;
+
+            const deltaMove = {
+                x: e.clientX - previousMousePosition.x,
+                y: e.clientY - previousMousePosition.y
+            };
+
+            cameraRotation.y += deltaMove.x * 0.01;
+            cameraRotation.x += deltaMove.y * 0.01;
+
+            // Обмеження вертикального обертання
+            cameraRotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, cameraRotation.x));
+
+            updateCameraPosition();
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+        }
+
+        function handleWheel(e) {
+            if (e.target.closest('.ui-container')) return;
+            e.preventDefault();
+            
+            cameraDistance += e.deltaY * 0.01;
+            cameraDistance = Math.max(3, Math.min(20, cameraDistance));
+            updateCameraPosition();
+        }
+
+        function handleTouchStart(e) {
+            if (e.target.closest('.ui-container')) return;
+            e.preventDefault();
+            if (e.touches.length === 1) {
+                isMouseDown = true;
+                previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }
+        }
+
+        function handleTouchMove(e) {
+            if (!isMouseDown || e.target.closest('.ui-container')) return;
+            e.preventDefault();
+            
+            if (e.touches.length === 1) {
+                const deltaMove = {
+                    x: e.touches[0].clientX - previousMousePosition.x,
+                    y: e.touches[0].clientY - previousMousePosition.y
+                };
+
+                cameraRotation.y += deltaMove.x * 0.01;
+                cameraRotation.x += deltaMove.y * 0.01;
+                cameraRotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, cameraRotation.x));
+
+                updateCameraPosition();
+                previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }
+        }
+
+        function handleTouchEnd() {
+            isMouseDown = false;
+        }
+
+        function updateCameraPosition() {
+            const x = cameraDistance * Math.cos(cameraRotation.x) * Math.sin(cameraRotation.y);
+            const y = cameraDistance * Math.sin(cameraRotation.x);
+            const z = cameraDistance * Math.cos(cameraRotation.x) * Math.cos(cameraRotation.y);
+            
+            camera.setAttribute('position', { x, y, z });
+            
+            // Дивимося на центр сцени
+            const lookAtVector = new THREE.Vector3(0, 0, 0);
+            const cameraPosition = new THREE.Vector3(x, y, z);
+            const direction = lookAtVector.sub(cameraPosition).normalize();
+            
+            // Обчислюємо кут обертання камери
+            const phi = Math.asin(direction.y);
+            const theta = Math.atan2(direction.x, direction.z);
+            
+            camera.setAttribute('rotation', {
+                x: phi * 180 / Math.PI,
+                y: theta * 180 / Math.PI,
+                z: 0
+            });
+        }
+
+        // Оновлення тригонометричних елементів
+        function updateTrigonometry(angleDegrees) {
+            currentAngle = angleDegrees;
+            const angleRad = (angleDegrees * Math.PI) / 180;
+            
+            const sinVal = Math.sin(angleRad);
+            const cosVal = Math.cos(angleRad);
+            const tanVal = Math.tan(angleRad);
+            
+            // Оновлення значень в UI
+            angleDisplay.textContent = `${Math.round(angleDegrees)}°`;
+            radianDisplay.textContent = angleRad.toFixed(2);
+            sinValue.textContent = sinVal.toFixed(3);
+            cosValue.textContent = cosVal.toFixed(3);
+            
+            if (Math.abs(cosVal) < 0.001) {
+                tanValue.textContent = '∞';
+            } else if (Math.abs(tanVal) > 1000) {
+                tanValue.textContent = tanVal > 0 ? '+∞' : '-∞';
+            } else {
+                tanValue.textContent = tanVal.toFixed(3);
+            }
+            
+            angleSlider.value = angleDegrees;
+            
+            // Оновлення 3D елементів
+            updateCircleElements(sinVal, cosVal, tanVal, angleRad);
+        }
+
+        function updateCircleElements(sinVal, cosVal, tanVal, angleRad) {
+            // Позиція точки на колі
+            const pointX = cosVal * 2;
+            const pointY = sinVal * 2;
+            circlePoint.setAttribute('position', `${pointX} ${pointY} 0`);
+            
+            // Радіус-вектор
+            const vectorAngle = -angleRad * 180 / Math.PI;
+            radiusVector.setAttribute('position', `${pointX/2} ${pointY/2} 0`);
+            radiusVector.setAttribute('rotation', `0 0 ${vectorAngle}`);
+            
+            // Sin лінія (вертикальна проекція)
+            if (showSin.checked) {
+                sinLine.setAttribute('height', Math.abs(sinVal * 2));
+                sinLine.setAttribute('position', `0 ${sinVal} 0`);
+                sinLine.setAttribute('visible', true);
+            } else {
+                sinLine.setAttribute('visible', false);
+            }
+            
+            // Cos лінія (горизонтальна проекція)
+            if (showCos.checked) {
+                cosLine.setAttribute('height', Math.abs(cosVal * 2));
+                cosLine.setAttribute('position', `${cosVal} 0 0`);
+                cosLine.setAttribute('visible', true);
+            } else {
+                cosLine.setAttribute('visible', false);
+            }
+            
+            // Tan лінія
+            if (showTan.checked && Math.abs(cosVal) > 0.01 && Math.abs(tanVal) < 10) {
+                const tanHeight = Math.abs(tanVal * 2);
+                tanLine.setAttribute('height', tanHeight);
+                tanLine.setAttribute('position', `2 ${tanVal} 0`);
+                tanLine.setAttribute('visible', true);
+            } else {
+                tanLine.setAttribute('visible', false);
+            }
+
+            // Оновлення поєднаного режиму
+            if (currentMode === 'combined') {
+                updateCombinedElements(sinVal, cosVal, tanVal, angleRad);
+            }
+        }
+
+        // Створення 3D графіків (оптимізована версія)
+        function create3DGraphs() {
+            const sinGraphEntity = document.getElementById('sinGraph');
+            const cosGraphEntity = document.getElementById('cosGraph');
+            const tanGraphEntity = document.getElementById('tanGraph');
+            
+            // Очищення попередніх графіків
+            clearEntity(sinGraphEntity);
+            clearEntity(cosGraphEntity);
+            clearEntity(tanGraphEntity);
+            
+            const step = 0.15; // Збільшений крок для кращої продуктивності
+            const scale = 1.5;
+            
+            // Створення точок для графіків
+            for (let x = -Math.PI * 2; x <= Math.PI * 2; x += step) {
+                const normalizedX = x / Math.PI * 3; // Масштабування для кращого відображення
+                
+                // Sin график
+                const sinY = Math.sin(x) * scale;
+                createGraphPoint(sinGraphEntity, normalizedX, sinY, 0, '#3498db', 0.03);
+                
+                // Cos график
+                const cosY = Math.cos(x) * scale;
+                createGraphPoint(cosGraphEntity, normalizedX, cosY, 1.5, '#e74c3c', 0.03);
+                
+                // Tan график (з обмеженнями)
+                if (Math.abs(Math.cos(x)) > 0.1) {
+                    const tanY = Math.tan(x);
+                    if (Math.abs(tanY) < 4) {
+                        createGraphPoint(tanGraphEntity, normalizedX, tanY * scale / 2, 3, '#2ecc71', 0.03);
+                    }
+                }
+            }
+        }
+
+        function createGraphPoint(parent, x, y, z, color, radius) {
+            const sphere = document.createElement('a-sphere');
+            sphere.setAttribute('position', `${x} ${y} ${z}`);
+            sphere.setAttribute('radius', radius);
+            sphere.setAttribute('color', color);
+            sphere.setAttribute('opacity', '0.8');
+            parent.appendChild(sphere);
+        }
+
+        function clearEntity(entity) {
+            while(entity.firstChild) {
+                entity.removeChild(entity.firstChild);
+            }
+        }
+
+        // Створення кривих для поєднаного режиму
+        function createCombinedGraphs() {
+            const sinCurve = document.getElementById('sinCurve');
+            const cosCurve = document.getElementById('cosCurve');
+            
+            clearEntity(sinCurve);
+            clearEntity(cosCurve);
+            
+            const step = 0.25;
+            const scaleX = 0.6;
+            const scaleY = 0.6;
+            
+            // Створення sin кривої
+            for (let x = -Math.PI * 2; x <= Math.PI * 2; x += step) {
+                const posX = x * scaleX;
+                const posY = Math.sin(x) * scaleY + 1;
+                createGraphPoint(sinCurve, posX, posY, 0, '#3498db', 0.04);
+            }
+            
+            // Створення cos кривої
+            for (let x = -Math.PI * 2; x <= Math.PI * 2; x += step) {
+                const posX = x * scaleX;
+                const posY = Math.cos(x) * scaleY - 1;
+                createGraphPoint(cosCurve, posX, posY, 0, '#e74c3c', 0.04);
+            }
+        }
+
+        // Оновлення елементів поєднаного режиму
+        function updateCombinedElements(sinVal, cosVal, tanVal, angleRad) {
+            const smallCirclePoint = document.getElementById('smallCirclePoint');
+            const smallRadiusVector = document.getElementById('smallRadiusVector');
+            const smallSinLine = document.getElementById('smallSinLine');
+            const smallCosLine = document.getElementById('smallCosLine');
+            
+            if (smallCirclePoint) {
+                const pointX = cosVal * 2;
+                const pointY = sinVal * 2;
+                smallCirclePoint.setAttribute('position', `${pointX} ${pointY} 0`);
+                
+                const vectorAngle = -angleRad * 180 / Math.PI;
+                smallRadiusVector.setAttribute('position', `${pointX/2} ${pointY/2} 0`);
+                smallRadiusVector.setAttribute('rotation', `0 0 ${vectorAngle}`);
+                
+                smallSinLine.setAttribute('height', Math.abs(sinVal * 2));
+                smallSinLine.setAttribute('position', `0 ${sinVal} 0`);
+                
+                smallCosLine.setAttribute('height', Math.abs(cosVal * 2));
+                smallCosLine.setAttribute('position', `${cosVal} 0 0`);
+            }
+        }
+
+        // Перемикання режимів
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // Оновлення кнопок
+            document.querySelectorAll('.mode-controls button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Скидання позиції камери
+            cameraRotation = { x: 0, y: 0 };
+            
+            switch(mode) {
+                case 'circle':
+                    circleModeBtn.classList.add('active');
+                    circleGroup.setAttribute('visible', true);
+                    graphGroup.setAttribute('visible', false);
+                    combinedGroup.setAttribute('visible', false);
+                    cameraDistance = 8;
+                    updateCameraPosition();
+                    break;
+                    
+                case 'graph':
+                    graphModeBtn.classList.add('active');
+                    circleGroup.setAttribute('visible', false);
+                    graphGroup.setAttribute('visible', true);
+                    combinedGroup.setAttribute('visible', false);
+                    cameraDistance = 12;
+                    cameraRotation.x = 0.3;
+                    cameraRotation.y = 0.5;
+                    updateCameraPosition();
+                    setTimeout(() => create3DGraphs(), 100);
+                    break;
+                    
+                case 'combined':
+                    combinedModeBtn.classList.add('active');
+                    circleGroup.setAttribute('visible', false);
+                    graphGroup.setAttribute('visible', false);
+                    combinedGroup.setAttribute('visible', true);
+                    cameraDistance = 10;
+                    updateCameraPosition();
+                    setTimeout(() => createCombinedGraphs(), 100);
+                    break;
+            }
+        }
+
+        // Додаткові функції для покращеної взаємодії
+        function addAdvancedControls() {
+            // Клавіатурні скорочення
+            document.addEventListener('keydown', (e) => {
+                switch(e.key) {
+                    case '1':
+                        switchMode('circle');
+                        break;
+                    case '2':
+                        switchMode('graph');
+                        break;
+                    case '3':
+                        switchMode('combined');
+                        break;
+                    case ' ':
+                        e.preventDefault();
+                        animateCheck.checked = !animateCheck.checked;
+                        animateCheck.dispatchEvent(new Event('change'));
+                        break;
+                    case 'r':
+                    case 'R':
+                        resetBtn.click();
+                        break;
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        updateTrigonometry(currentAngle - 5);
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        updateTrigonometry(currentAngle + 5);
+                        break;
+                }
+            });
+        }
+
+        // Анімація
+        function animate() {
+            if (isAnimating) {
+                currentAngle = (currentAngle + 2) % 720;
+                if (currentAngle > 360) currentAngle = currentAngle - 720;
+                updateTrigonometry(currentAngle);
+                animationId = requestAnimationFrame(animate);
+            }
+        }
+
+        // Обробники подій
+        angleSlider.addEventListener('input', (e) => {
+            if (!isAnimating) {
+                updateTrigonometry(parseInt(e.target.value));
+            }
+        });
+
+        animateCheck.addEventListener('change', (e) => {
+            isAnimating = e.target.checked;
+            if (isAnimating) {
+                animate();
+            } else {
+                cancelAnimationFrame(animationId);
+            }
+        });
+
+        resetBtn.addEventListener('click', () => {
+            isAnimating = false;
+            animateCheck.checked = false;
+            cancelAnimationFrame(animationId);
+            updateTrigonometry(0);
+            
+            // Скидання камери
+            cameraRotation = { x: 0, y: 0 };
+            cameraDistance = 8;
+            updateCameraPosition();
+        });
+
+        // Обробники для відображення функцій
+        showSin.addEventListener('change', () => {
+            updateTrigonometry(currentAngle);
+        });
+
+        showCos.addEventListener('change', () => {
+            updateTrigonometry(currentAngle);
+        });
+
+        showTan.addEventListener('change', () => {
+            updateTrigonometry(currentAngle);
+        });
+
+        // Обробники кнопок режимів
+        circleModeBtn.addEventListener('click', () => switchMode('circle'));
+        graphModeBtn.addEventListener('click', () => switchMode('graph'));
+        combinedModeBtn.addEventListener('click', () => switchMode('combined'));
+
+        // Оптимізація продуктивності
+        function optimizePerformance() {
+            // Детекція мобільних пристроїв
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            if (isMobile) {
+                angleSlider.step = "10";
+                // Зменшення якості рендерінгу для мобільних
+                scene.setAttribute('renderer', 'antialias: false; colorManagement: false; physicallyCorrectLights: false');
+            }
+        }
+
+        // Ініціалізація
+        function init() {
+            // Чекаємо завантаження A-Frame
+            if (document.querySelector('a-scene').hasLoaded) {
+                initApp();
+            } else {
+                document.querySelector('a-scene').addEventListener('loaded', initApp);
+            }
+        }
+
+        function initApp() {
+            console.log('A-Frame scene loaded, initializing app...');
+            
+            // Ініціалізація контролів
+            initOrbitControls();
+            addAdvancedControls();
+            optimizePerformance();
+            
+            // Початкове оновлення
+            updateTrigonometry(0);
+            
+            // Початкова позиція камери
+            updateCameraPosition();
+            
+            console.log('App initialized successfully');
+        }
+
+        // Запуск після завантаження DOM
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
