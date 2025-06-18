@@ -2,8 +2,9 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Одиничне коло з графіком</title>
+  <title>Одиничне коло з емоційною анімацією</title>
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
   <style>
     body { margin: 0; background: #001122; font-family: sans-serif; color: white; }
     #ui {
@@ -38,7 +39,7 @@
     <label><input type="checkbox" id="showSin" checked /> <span class="sin-color">sin(θ)</span></label><br />
     <label><input type="checkbox" id="showCos" checked /> <span class="cos-color">cos(θ)</span></label><br />
     <label><input type="checkbox" id="showTan" checked /> <span class="tan-color">tan(θ)</span></label><br />
-    <label><input type="checkbox" id="animate" /> Анімація</label>
+    <label><input type="checkbox" id="animate" /> Анімація (з емоцією)</label>
   </div>
 
   <div id="values">
@@ -47,29 +48,24 @@
     <div class="tan-color">tan(θ) = <span id="tanVal">0.000</span></div>
   </div>
 
-  <a-scene background="color: #001122">
-    <a-assets>
-      <img id="pi" src="images/pi.png">
-      <img id="pi2" src="images/pi_2.png">
-      <img id="3pi2" src="images/3pi_2.png">
-      <img id="2pi" src="images/2pi.png">
-    </a-assets>
+  <video id="videoInput" autoplay muted playsinline style="display:none;"></video>
 
+  <a-scene background="color: #001122">
     <a-entity id="cameraRig">
-      <a-entity camera position="0 0 6" look-controls wasd-controls></a-entity>
+      <a-entity camera position="0 0 5" look-controls wasd-controls></a-entity>
     </a-entity>
 
-    <!-- Одиничне коло -->
-    <a-entity id="circleGroup" position="-3 0 0">
+    <a-entity id="circleGroup">
       <a-ring radius-inner="0.99" radius-outer="1.01" color="white"></a-ring>
       <a-entity line="start: -1.5 0 0; end: 1.5 0 0; color: white"></a-entity>
       <a-entity line="start: 0 -1.5 0; end: 0 1.5 0; color: white"></a-entity>
 
+      <!-- Підписи -->
       <a-entity id="labels">
-        <a-text value="0°" position="1.3 0 0" color="white" align="center" scale="1 1 1"></a-text>
-        <a-text value="90°" position="0 1.3 0" color="white" align="center" scale="1 1 1"></a-text>
-        <a-text value="180°" position="-1.3 0 0" color="white" align="center" scale="1 1 1"></a-text>
-        <a-text value="270°" position="0 -1.3 0" color="white" align="center" scale="1 1 1"></a-text>
+        <a-text value=" 0° " position="1.3 0 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
+        <a-text value=" 90° " position="0 1.3 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
+        <a-text value="180°" position="-1.3 0 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
+        <a-text value="270°" position="0 -1.3 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
         <a-text value="1" position="0 1.05 0" color="red" align="center" scale="1 1 1"></a-text>
         <a-text value="-1" position="0 -1.05 0" color="red" align="center" scale="1 1 1"></a-text>
         <a-text value="1" position="1.05 0 0" color="red" align="center" scale="1 1 1"></a-text>
@@ -84,34 +80,6 @@
       <a-entity id="cosHelper" line="start: 0 0 0; end: 0 0 0; color: #cccccc"></a-entity>
       <a-entity id="tanLine" line="start: 0 0 0; end: 0 0 0; color: #2ecc71"></a-entity>
       <a-entity id="tanHelper" line="start: 0 0 0; end: 0 0 0; color: #cccccc"></a-entity>
-    </a-entity>
-
-    <!-- Координатна площина -->
-    <a-entity id="graphPlane" position="3 0 0">
-      <!-- Сітка -->
-      <a-entity line="start: 0 -1 0; end: 6.28 -1 0; color: #333"></a-entity>
-      <a-entity line="start: 0 -0.5 0; end: 6.28 -0.5 0; color: #333"></a-entity>
-      <a-entity line="start: 0 0.5 0; end: 6.28 0.5 0; color: #333"></a-entity>
-      <a-entity line="start: 0 1 0; end: 6.28 1 0; color: #333"></a-entity>
-
-      <a-entity line="start: 0 -1 0; end: 0 1 0; color: #333"></a-entity>
-      <a-entity line="start: 1.57 -1 0; end: 1.57 1 0; color: #333"></a-entity>
-      <a-entity line="start: 3.14 -1 0; end: 3.14 1 0; color: #333"></a-entity>
-      <a-entity line="start: 4.71 -1 0; end: 4.71 1 0; color: #333"></a-entity>
-      <a-entity line="start: 6.28 -1 0; end: 6.28 1 0; color: #333"></a-entity>
-
-      <a-entity line="start: 0 0 0; end: 6.28 0 0; color: red"></a-entity>
-      <a-entity line="start: 0 -1.2 0; end: 0 1.2 0; color: white"></a-entity>
-
-      <!-- Підписи -->
-      <a-text value="0" position="0 -0.25 0" align="center" color="white" scale="0.5 0.5 0.5"></a-text>
-      <a-image src="#pi2" position="1.57 -0.25 0" width="0.4" height="0.2"></a-image>
-      <a-image src="#pi" position="3.14 -0.25 0" width="0.35" height="0.2"></a-image>
-      <a-image src="#3pi2" position="4.71 -0.25 0" width="0.6" height="0.2"></a-image>
-      <a-image src="#2pi" position="6.28 -0.25 0" width="0.5" height="0.2"></a-image>
-
-      <a-text value="1" position="-0.2 1 0" align="right" color="white" scale="0.5 0.5 0.5"></a-text>
-      <a-text value="-1" position="-0.2 -1 0" align="right" color="white" scale="0.5 0.5 0.5"></a-text>
     </a-entity>
   </a-scene>
 
@@ -138,6 +106,7 @@
 
     let angle = 0;
     let animating = false;
+    let currentEmotion = "neutral";
 
     function updateScene() {
       const rad = angle * Math.PI / 180;
@@ -192,15 +161,45 @@
 
     function animate() {
       if (!animating) return;
-      angle = (angle + 1) % 360;
+
+      let step = 1;
+      if (currentEmotion === "happy") step = 2;
+      else if (["neutral", "sad", "fearful"].includes(currentEmotion)) step = 0.3;
+
+      angle = (angle + step) % 360;
       angleSlider.value = angle;
       updateScene();
       requestAnimationFrame(animate);
     }
 
     updateScene();
+
+    // Емоційне розпізнавання
+    const video = document.getElementById('videoInput');
+
+    async function startEmotionRecognition() {
+      await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js/weights');
+      await faceapi.nets.faceExpressionNet.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js/weights');
+
+      navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+        video.srcObject = stream;
+      });
+
+      video.addEventListener('play', () => {
+        setInterval(async () => {
+          const detections = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceExpressions();
+          if (detections && detections.expressions) {
+            const expressions = detections.expressions;
+            currentEmotion = Object.entries(expressions).sort((a, b) => b[1] - a[1])[0][0];
+          }
+        }, 500);
+      });
+    }
+
+    startEmotionRecognition();
   </script>
 </body>
 </html>
+
 
 
