@@ -2,9 +2,8 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Одиничне коло з емоційною анімацією</title>
+  <title>Одиничне коло з проекціями</title>
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
   <style>
     body { margin: 0; background: #001122; font-family: sans-serif; color: white; }
     #ui {
@@ -27,9 +26,37 @@
       font-size: 14px;
       border-radius: 10px;
     }
+    #emotionStatus {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.9);
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 14px;
+    }
+    #videoContainer {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      width: 200px;
+      height: 150px;
+      border: 2px solid white;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    #video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
     .sin-color { color: #3498db; }
     .cos-color { color: #e74c3c; }
     .tan-color { color: #2ecc71; }
+    .happy { color: #ffeb3b; }
+    .sad { color: #2196f3; }
+    .neutral { color: #9e9e9e; }
+    .angry { color: #f44336; }
   </style>
 </head>
 <body>
@@ -39,7 +66,8 @@
     <label><input type="checkbox" id="showSin" checked /> <span class="sin-color">sin(θ)</span></label><br />
     <label><input type="checkbox" id="showCos" checked /> <span class="cos-color">cos(θ)</span></label><br />
     <label><input type="checkbox" id="showTan" checked /> <span class="tan-color">tan(θ)</span></label><br />
-    <label><input type="checkbox" id="animate" /> Анімація (з емоцією)</label>
+    <label><input type="checkbox" id="animate" /> Анімація</label><br />
+    <label><input type="checkbox" id="emotionControl" /> Контроль емоціями</label>
   </div>
 
   <div id="values">
@@ -48,11 +76,18 @@
     <div class="tan-color">tan(θ) = <span id="tanVal">0.000</span></div>
   </div>
 
-  <video id="videoInput" autoplay muted playsinline style="display:none;"></video>
+  <div id="emotionStatus">
+    <div>Емоція: <span id="currentEmotion" class="neutral">Нейтральна</span></div>
+    <div>Швидкість: <span id="speedDisplay">1x</span></div>
+  </div>
+
+  <div id="videoContainer">
+    <video id="video" autoplay muted></video>
+  </div>
 
   <a-scene background="color: #001122">
     <a-entity id="cameraRig">
-      <a-entity camera position="0 0 5" look-controls wasd-controls></a-entity>
+      <a-entity camera position="0 0 5" look-controls="enabled: true" wasd-controls="enabled: true"></a-entity>
     </a-entity>
 
     <a-entity id="circleGroup">
@@ -60,16 +95,19 @@
       <a-entity line="start: -1.5 0 0; end: 1.5 0 0; color: white"></a-entity>
       <a-entity line="start: 0 -1.5 0; end: 0 1.5 0; color: white"></a-entity>
 
-      <!-- Підписи -->
       <a-entity id="labels">
         <a-text value=" 0° " position="1.3 0 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
+        <a-text value=" 45° " position="0.92 0.92 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
         <a-text value=" 90° " position="0 1.3 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
-        <a-text value="180°" position="-1.3 0 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
-        <a-text value="270°" position="0 -1.3 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
-        <a-text value="1" position="0 1.05 0" color="red" align="center" scale="1 1 1"></a-text>
-        <a-text value="-1" position="0 -1.05 0" color="red" align="center" scale="1 1 1"></a-text>
-        <a-text value="1" position="1.05 0 0" color="red" align="center" scale="1 1 1"></a-text>
-        <a-text value="-1" position="-1.05 0 0" color="red" align="center" scale="1 1 1"></a-text>
+        <a-text value=" 135° " position="-0.92 0.92 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
+        <a-text value=" 180° " position="-1.3 0 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
+        <a-text value=" 225° " position="-0.92 -0.92 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
+        <a-text value=" 270° " position="0 -1.3 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
+        <a-text value=" 315° " position="0.92 -0.92 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
+        <a-text value="1" position="0 1.05 0" color="red" align="center" side="double" scale="1 1 1"></a-text>
+        <a-text value="-1" position="0 -1.05 0" color="red" align="center" side="double" scale="1 1 1"></a-text>
+        <a-text value="1" position="1.05 0 0" color="red" align="center" side="double" scale="1 1 1"></a-text>
+        <a-text value="-1" position="-1.05 0 0" color="red" align="center" side="double" scale="1 1 1"></a-text>
       </a-entity>
 
       <a-entity id="radiusVec" line="start: 0 0 0; end: 1 0 0; color: yellow"></a-entity>
@@ -83,17 +121,24 @@
     </a-entity>
   </a-scene>
 
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@latest"></script>
+
   <script>
     const angleSlider = document.getElementById('angleSlider');
     const angleDisplay = document.getElementById('angleDisplay');
     const radianDisplay = document.getElementById('radianDisplay');
     const animateCheck = document.getElementById('animate');
+    const emotionControlCheck = document.getElementById('emotionControl');
     const showSin = document.getElementById('showSin');
     const showCos = document.getElementById('showCos');
     const showTan = document.getElementById('showTan');
     const sinVal = document.getElementById('sinVal');
     const cosVal = document.getElementById('cosVal');
     const tanVal = document.getElementById('tanVal');
+    const currentEmotionSpan = document.getElementById('currentEmotion');
+    const speedDisplay = document.getElementById('speedDisplay');
+    const video = document.getElementById('video');
 
     const dot = document.getElementById('dot');
     const radiusVec = document.getElementById('radiusVec');
@@ -106,7 +151,122 @@
 
     let angle = 0;
     let animating = false;
-    let currentEmotion = "neutral";
+    let emotionControlEnabled = false;
+    let currentEmotion = 'neutral';
+    let animationSpeed = 1;
+    let faceModel = null;
+
+    // Ініціалізація камери та моделі
+    async function initCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        
+        // Завантаження моделі розпізнавання обличчя
+        faceModel = await faceLandmarksDetection.load(
+          faceLandmarksDetection.SupportedPackages.mediapipeFacemesh
+        );
+        
+        detectEmotions();
+      } catch (error) {
+        console.error('Помилка доступу до камери:', error);
+        currentEmotionSpan.textContent = 'Камера недоступна';
+      }
+    }
+
+    // Розпізнавання емоцій на основі рухів обличчя
+    async function detectEmotions() {
+      if (!faceModel || !video.videoWidth) {
+        requestAnimationFrame(detectEmotions);
+        return;
+      }
+
+      try {
+        const predictions = await faceModel.estimateFaces({
+          input: video,
+          returnTensors: false,
+          flipHorizontal: false
+        });
+
+        if (predictions.length > 0) {
+          const face = predictions[0];
+          const emotion = analyzeEmotion(face.scaledMesh);
+          updateEmotion(emotion);
+        }
+      } catch (error) {
+        console.error('Помилка розпізнавання:', error);
+      }
+
+      requestAnimationFrame(detectEmotions);
+    }
+
+    // Аналіз емоцій на основі ключових точок обличчя
+    function analyzeEmotion(landmarks) {
+      // Кути рота (приблизні індекси)
+      const leftMouth = landmarks[61];
+      const rightMouth = landmarks[291];
+      const topMouth = landmarks[13];
+      const bottomMouth = landmarks[14];
+      
+      // Очі
+      const leftEye = landmarks[33];
+      const rightEye = landmarks[263];
+      
+      // Брови
+      const leftBrow = landmarks[70];
+      const rightBrow = landmarks[300];
+
+      // Обчислення відносних позицій
+      const mouthWidth = Math.abs(rightMouth[0] - leftMouth[0]);
+      const mouthHeight = Math.abs(topMouth[1] - bottomMouth[1]);
+      const mouthRatio = mouthHeight / mouthWidth;
+
+      const eyeDistance = Math.abs(rightEye[0] - leftEye[0]);
+      const browDistance = Math.abs(rightBrow[1] - leftBrow[1]);
+
+      // Простий алгоритм визначення емоції
+      if (mouthRatio > 0.3) {
+        return 'happy'; // Широка посмішка
+      } else if (mouthRatio < 0.1 && browDistance < eyeDistance * 0.3) {
+        return 'sad'; // Вузький рот + насуплені брови
+      } else if (browDistance < eyeDistance * 0.2) {
+        return 'angry'; // Дуже насуплені брови
+      } else {
+        return 'neutral';
+      }
+    }
+
+    // Оновлення емоції та швидкості
+    function updateEmotion(emotion) {
+      if (!emotionControlEnabled) return;
+
+      currentEmotion = emotion;
+      
+      // Встановлення швидкості залежно від емоції
+      switch (emotion) {
+        case 'happy':
+          animationSpeed = 3; // Швидко
+          currentEmotionSpan.textContent = 'Весела';
+          currentEmotionSpan.className = 'happy';
+          break;
+        case 'sad':
+          animationSpeed = 0.3; // Дуже повільно
+          currentEmotionSpan.textContent = 'Сумна';
+          currentEmotionSpan.className = 'sad';
+          break;
+        case 'angry':
+          animationSpeed = 0.5; // Повільно
+          currentEmotionSpan.textContent = 'Сердита';
+          currentEmotionSpan.className = 'angry';
+          break;
+        default:
+          animationSpeed = 1; // Нормально
+          currentEmotionSpan.textContent = 'Нейтральна';
+          currentEmotionSpan.className = 'neutral';
+      }
+      
+      speedDisplay.textContent = animationSpeed + 'x';
+    }
 
     function updateScene() {
       const rad = angle * Math.PI / 180;
@@ -149,6 +309,24 @@
       }
     }
 
+    let lastAnimationTime = 0;
+    function animate(currentTime) {
+      if (!animating) return;
+      
+      const deltaTime = currentTime - lastAnimationTime;
+      const targetInterval = 16 / animationSpeed; // 60fps базова швидкість
+      
+      if (deltaTime >= targetInterval) {
+        angle = (angle + 1) % 360;
+        angleSlider.value = angle;
+        updateScene();
+        lastAnimationTime = currentTime;
+      }
+      
+      requestAnimationFrame(animate);
+    }
+
+    // Event listeners
     angleSlider.addEventListener('input', () => {
       angle = parseInt(angleSlider.value);
       updateScene();
@@ -156,50 +334,21 @@
 
     animateCheck.addEventListener('change', () => {
       animating = animateCheck.checked;
-      if (animating) animate();
+      if (animating) {
+        lastAnimationTime = performance.now();
+        animate(lastAnimationTime);
+      }
     });
 
-    function animate() {
-      if (!animating) return;
+    emotionControlCheck.addEventListener('change', () => {
+      emotionControlEnabled = emotionControlCheck.checked;
+      if (emotionControlEnabled && !faceModel) {
+        initCamera();
+      }
+    });
 
-      let step = 1;
-      if (currentEmotion === "happy") step = 2;
-      else if (["neutral", "sad", "fearful"].includes(currentEmotion)) step = 0.3;
-
-      angle = (angle + step) % 360;
-      angleSlider.value = angle;
-      updateScene();
-      requestAnimationFrame(animate);
-    }
-
+    // Ініціалізація
     updateScene();
-
-    // Емоційне розпізнавання
-    const video = document.getElementById('videoInput');
-
-    async function startEmotionRecognition() {
-      await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js/weights');
-      await faceapi.nets.faceExpressionNet.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js/weights');
-
-      navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
-        video.srcObject = stream;
-      });
-
-      video.addEventListener('play', () => {
-        setInterval(async () => {
-          const detections = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceExpressions();
-          if (detections && detections.expressions) {
-            const expressions = detections.expressions;
-            currentEmotion = Object.entries(expressions).sort((a, b) => b[1] - a[1])[0][0];
-          }
-        }, 500);
-      });
-    }
-
-    startEmotionRecognition();
   </script>
 </body>
 </html>
-
-
-
