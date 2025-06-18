@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Одиничне коло з графіком</title>
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <style>
+    body { margin: 0; background: #001122; font-family: sans-serif; color: white; }
+    #ui {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.9);
+      padding: 15px;
+      border-radius: 10px;
+      z-index: 1000;
+      font-size: 14px;
+    }
+    #values {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.9);
+      padding: 10px;
+      font-family: monospace;
+      font-size: 14px;
+      border-radius: 10px;
+    }
+    .sin-color { color: #3498db; }
+    .cos-color { color: #e74c3c; }
+    .tan-color { color: #2ecc71; }
+  </style>
+</head>
+<body>
+  <div id="ui">
+    <label>Кут: <span id="angleDisplay">0°</span> (<span id="radianDisplay">0.00</span> рад)</label><br />
+    <input type="range" min="0" max="360" value="0" id="angleSlider" /><br />
+    <label><input type="checkbox" id="showSin" checked /> <span class="sin-color">sin(θ)</span></label><br />
+    <label><input type="checkbox" id="showCos" checked /> <span class="cos-color">cos(θ)</span></label><br />
+    <label><input type="checkbox" id="showTan" checked /> <span class="tan-color">tan(θ)</span></label><br />
+    <label><input type="checkbox" id="animate" /> Анімація</label>
+  </div>
+
+  <div id="values">
+    <div class="sin-color">sin(θ) = <span id="sinVal">0.000</span></div>
+    <div class="cos-color">cos(θ) = <span id="cosVal">1.000</span></div>
+    <div class="tan-color">tan(θ) = <span id="tanVal">0.000</span></div>
+  </div>
+
+  <a-scene background="color: #001122">
+    <a-assets>
+      <img id="pi" src="images/pi.png">
+      <img id="pi2" src="images/pi_2.png">
+      <img id="3pi2" src="images/3pi_2.png">
+      <img id="2pi" src="images/2pi.png">
+    </a-assets>
+
+    <a-entity id="cameraRig">
+      <a-entity camera position="0 0 6" look-controls wasd-controls></a-entity>
+    </a-entity>
+
+    <!-- Одиничне коло -->
+    <a-entity id="circleGroup" position="-3 0 0">
+      <a-ring radius-inner="0.99" radius-outer="1.01" color="white"></a-ring>
+      <a-entity line="start: -1.5 0 0; end: 1.5 0 0; color: white"></a-entity>
+      <a-entity line="start: 0 -1.5 0; end: 0 1.5 0; color: white"></a-entity>
+
+      <a-entity id="labels">
+        <a-text value="0°" position="1.3 0 0" color="white" align="center" scale="1 1 1"></a-text>
+        <a-text value="90°" position="0 1.3 0" color="white" align="center" scale="1 1 1"></a-text>
+        <a-text value="180°" position="-1.3 0 0" color="white" align="center" scale="1 1 1"></a-text>
+        <a-text value="270°" position="0 -1.3 0" color="white" align="center" scale="1 1 1"></a-text>
+        <a-text value="1" position="0 1.05 0" color="red" align="center" scale="1 1 1"></a-text>
+        <a-text value="-1" position="0 -1.05 0" color="red" align="center" scale="1 1 1"></a-text>
+        <a-text value="1" position="1.05 0 0" color="red" align="center" scale="1 1 1"></a-text>
+        <a-text value="-1" position="-1.05 0 0" color="red" align="center" scale="1 1 1"></a-text>
+      </a-entity>
+
+      <a-entity id="radiusVec" line="start: 0 0 0; end: 1 0 0; color: yellow"></a-entity>
+      <a-sphere id="dot" radius="0.05" color="yellow" position="1 0 0"></a-sphere>
+      <a-entity id="sinLine" line="start: 0 0 0; end: 0 0 0; color: #3498db"></a-entity>
+      <a-entity id="sinHelper" line="start: 0 0 0; end: 0 0 0; color: #cccccc"></a-entity>
+      <a-entity id="cosLine" line="start: 0 0 0; end: 0 0 0; color: #e74c3c"></a-entity>
+      <a-entity id="cosHelper" line="start: 0 0 0; end: 0 0 0; color: #cccccc"></a-entity>
+      <a-entity id="tanLine" line="start: 0 0 0; end: 0 0 0; color: #2ecc71"></a-entity>
+      <a-entity id="tanHelper" line="start: 0 0 0; end: 0 0 0; color: #cccccc"></a-entity>
+    </a-entity>
+
+    <!-- Координатна площина -->
+    <a-entity id="graphPlane" position="3 0 0">
+      <!-- Сітка -->
+      <a-entity line="start: 0 -1 0; end: 6.28 -1 0; color: #333"></a-entity>
+      <a-entity line="start: 0 -0.5 0; end: 6.28 -0.5 0; color: #333"></a-entity>
+      <a-entity line="start: 0 0.5 0; end: 6.28 0.5 0; color: #333"></a-entity>
+      <a-entity line="start: 0 1 0; end: 6.28 1 0; color: #333"></a-entity>
+
+      <a-entity line="start: 0 -1 0; end: 0 1 0; color: #333"></a-entity>
+      <a-entity line="start: 1.57 -1 0; end: 1.57 1 0; color: #333"></a-entity>
+      <a-entity line="start: 3.14 -1 0; end: 3.14 1 0; color: #333"></a-entity>
+      <a-entity line="start: 4.71 -1 0; end: 4.71 1 0; color: #333"></a-entity>
+      <a-entity line="start: 6.28 -1 0; end: 6.28 1 0; color: #333"></a-entity>
+
+      <a-entity line="start: 0 0 0; end: 6.28 0 0; color: red"></a-entity>
+      <a-entity line="start: 0 -1.2 0; end: 0 1.2 0; color: white"></a-entity>
+
+      <!-- Підписи -->
+      <a-text value="0" position="0 -0.25 0" align="center" color="white" scale="0.5 0.5 0.5"></a-text>
+      <a-image src="#pi2" position="1.57 -0.25 0" width="0.4" height="0.2"></a-image>
+      <a-image src="#pi" position="3.14 -0.25 0" width="0.35" height="0.2"></a-image>
+      <a-image src="#3pi2" position="4.71 -0.25 0" width="0.6" height="0.2"></a-image>
+      <a-image src="#2pi" position="6.28 -0.25 0" width="0.5" height="0.2"></a-image>
+
+      <a-text value="1" position="-0.2 1 0" align="right" color="white" scale="0.5 0.5 0.5"></a-text>
+      <a-text value="-1" position="-0.2 -1 0" align="right" color="white" scale="0.5 0.5 0.5"></a-text>
+    </a-entity>
+  </a-scene>
+
+  <script>
+    const angleSlider = document.getElementById('angleSlider');
+    const angleDisplay = document.getElementById('angleDisplay');
+    const radianDisplay = document.getElementById('radianDisplay');
+    const animateCheck = document.getElementById('animate');
+    const showSin = document.getElementById('showSin');
+    const showCos = document.getElementById('showCos');
+    const showTan = document.getElementById('showTan');
+    const sinVal = document.getElementById('sinVal');
+    const cosVal = document.getElementById('cosVal');
+    const tanVal = document.getElementById('tanVal');
+
+    const dot = document.getElementById('dot');
+    const radiusVec = document.getElementById('radiusVec');
+    const sinLine = document.getElementById('sinLine');
+    const sinHelper = document.getElementById('sinHelper');
+    const cosLine = document.getElementById('cosLine');
+    const cosHelper = document.getElementById('cosHelper');
+    const tanLine = document.getElementById('tanLine');
+    const tanHelper = document.getElementById('tanHelper');
+
+    let angle = 0;
+    let animating = false;
+
+    function updateScene() {
+      const rad = angle * Math.PI / 180;
+      const sin = Math.sin(rad);
+      const cos = Math.cos(rad);
+      const tan = Math.tan(rad);
+
+      angleDisplay.textContent = angle;
+      radianDisplay.textContent = rad.toFixed(2);
+      sinVal.textContent = sin.toFixed(3);
+      cosVal.textContent = cos.toFixed(3);
+      tanVal.textContent = Math.abs(cos) < 0.01 ? '∞' : tan.toFixed(3);
+
+      dot.setAttribute('position', `${cos} ${sin} 0`);
+      radiusVec.setAttribute('line', `start: 0 0 0; end: ${cos} ${sin} 0`);
+
+      if (showSin.checked) {
+        sinLine.setAttribute('line', `start: 0 0 0; end: 0 ${sin} 0`);
+        sinHelper.setAttribute('line', `start: ${cos} ${sin} 0; end: 0 ${sin} 0`);
+      } else {
+        sinLine.setAttribute('line', `start: 0 0 0; end: 0 0 0`);
+        sinHelper.setAttribute('line', `start: 0 0 0; end: 0 0 0`);
+      }
+
+      if (showCos.checked) {
+        cosLine.setAttribute('line', `start: 0 0 0; end: ${cos} 0 0`);
+        cosHelper.setAttribute('line', `start: ${cos} ${sin} 0; end: ${cos} 0 0`);
+      } else {
+        cosLine.setAttribute('line', `start: 0 0 0; end: 0 0 0`);
+        cosHelper.setAttribute('line', `start: 0 0 0; end: 0 0 0`);
+      }
+
+      if (showTan.checked && Math.abs(cos) > 0.01 && Math.abs(tan) < 10) {
+        const tanY = sin / cos;
+        tanLine.setAttribute('line', `start: 1 0 0; end: 1 ${tanY} 0`);
+        tanHelper.setAttribute('line', `start: 1 ${tanY} 0; end: ${cos} ${sin} 0`);
+      } else {
+        tanLine.setAttribute('line', `start: 0 0 0; end: 0 0 0`);
+        tanHelper.setAttribute('line', `start: 0 0 0; end: 0 0 0`);
+      }
+    }
+
+    angleSlider.addEventListener('input', () => {
+      angle = parseInt(angleSlider.value);
+      updateScene();
+    });
+
+    animateCheck.addEventListener('change', () => {
+      animating = animateCheck.checked;
+      if (animating) animate();
+    });
+
+    function animate() {
+      if (!animating) return;
+      angle = (angle + 1) % 360;
+      angleSlider.value = angle;
+      updateScene();
+      requestAnimationFrame(animate);
+    }
+
+    updateScene();
+  </script>
+</body>
+</html>
+
+
