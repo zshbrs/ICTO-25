@@ -4,7 +4,6 @@
   <meta charset="utf-8" />
   <title>Одиничне коло з проекціями</title>
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
   <style>
     body { margin: 0; background: #001122; font-family: sans-serif; color: white; }
     #ui {
@@ -40,8 +39,8 @@
       position: absolute;
       bottom: 10px;
       right: 10px;
-      width: 320px;
-      height: 240px;
+      width: 240px;
+      height: 180px;
       border: 2px solid white;
       border-radius: 10px;
       overflow: hidden;
@@ -50,15 +49,6 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transform: scaleX(-1);
-    }
-    #overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
     }
     .sin-color { color: #3498db; }
     .cos-color { color: #e74c3c; }
@@ -107,16 +97,23 @@
     <label><input type="checkbox" id="showTan" checked /> <span class="tan-color">tan(θ)</span></label><br />
     <label><input type="checkbox" id="animate" /> Анімація</label><br />
     
-    <button id="cameraToggle">📹 Увімкнути камеру</button>
+    <button id="cameraToggle">📹 Тест камери</button>
     
     <div style="margin-top: 10px;">
-      <div>Ручний контроль:</div>
+      <div>Контроль швидкості:</div>
       <div id="manualControls">
-        <button class="emotion-btn" data-emotion="happy">😊 Весело</button>
-        <button class="emotion-btn" data-emotion="sad">😢 Сумно</button>
-        <button class="emotion-btn" data-emotion="angry">😠 Сердито</button>
-        <button class="emotion-btn active" data-emotion="neutral">😐 Нейтрально</button>
+        <button class="emotion-btn" data-emotion="happy">😊 Швидко (5x)</button>
+        <button class="emotion-btn" data-emotion="sad">😢 Повільно (0.2x)</button>
+        <button class="emotion-btn" data-emotion="angry">😠 Середньо (0.5x)</button>
+        <button class="emotion-btn active" data-emotion="neutral">😐 Нормально (1x)</button>
       </div>
+    </div>
+    
+    <div style="margin-top: 10px; font-size: 12px;">
+      <div>🎯 Інструкція для камери:</div>
+      <div>• Яскраве світло = Швидко</div>
+      <div>• Темне середовище = Повільно</div>
+      <div>• Руки перед камерою = Дуже повільно</div>
     </div>
   </div>
 
@@ -127,7 +124,7 @@
   </div>
 
   <div id="emotionStatus">
-    <div>Емоція: <span id="currentEmotion" class="neutral">Нейтральна</span></div>
+    <div>Режим: <span id="currentEmotion" class="neutral">Нейтральний</span></div>
     <div>Швидкість: <span id="speedDisplay">1x</span></div>
     <div>Камера: <span id="cameraStatus">Вимкнена</span></div>
     <div id="detectionInfo" style="font-size: 12px; margin-top: 5px;">Очікування...</div>
@@ -135,7 +132,6 @@
 
   <div id="videoContainer" style="display: none;">
     <video id="video" autoplay muted playsinline></video>
-    <canvas id="overlay"></canvas>
   </div>
 
   <a-scene background="color: #001122">
@@ -193,7 +189,6 @@
     const cameraToggle = document.getElementById('cameraToggle');
     const videoContainer = document.getElementById('videoContainer');
     const video = document.getElementById('video');
-    const overlay = document.getElementById('overlay');
     const manualControls = document.getElementById('manualControls');
 
     const dot = document.getElementById('dot');
@@ -211,173 +206,134 @@
     let animationSpeed = 1;
     let cameraActive = false;
     let stream = null;
-    let modelsLoaded = false;
-    let isDetecting = false;
 
-    // Завантаження моделей face-api.js
-    async function loadModels() {
-      try {
-        detectionInfo.textContent = 'Завантаження моделей AI...';
-        
-        const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
-        
-        await Promise.all([
-          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-          faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL)
-        ]);
-        
-        modelsLoaded = true;
-        detectionInfo.textContent = 'Моделі завантажені!';
-        return true;
-      } catch (error) {
-        console.error('Помилка завантаження моделей:', error);
-        detectionInfo.textContent = 'Помилка завантаження моделей';
-        return false;
-      }
-    }
-
-    // Ініціалізація камери
+    // Простий тест камери
     async function startCamera() {
       try {
-        if (!modelsLoaded) {
-          const loaded = await loadModels();
-          if (!loaded) return;
-        }
-        
         detectionInfo.textContent = 'Запуск камери...';
         
+        // Запит доступу до камери
         stream = await navigator.mediaDevices.getUserMedia({ 
           video: { 
-            width: 320, 
-            height: 240,
-            facingMode: 'user'
+            width: 240, 
+            height: 180
           } 
         });
         
-        video.srcObject = stream;
+        console.log('Камера успішно запущена!', stream);
         
-        video.addEventListener('loadeddata', () => {
-          videoContainer.style.display = 'block';
-          cameraActive = true;
-          cameraStatus.textContent = 'Увімкнена';
-          cameraToggle.textContent = '📹 Вимкнути камеру';
-          cameraToggle.classList.add('active');
-          
-          // Налаштування overlay canvas
-          overlay.width = video.videoWidth;
-          overlay.height = video.videoHeight;
-          
-          // Заблокувати ручний контроль
-          manualControls.classList.add('disabled');
-          
-          detectionInfo.textContent = 'Готово! Показуйте емоції!';
-          
-          // Почати розпізнавання
-          detectEmotion();
-        });
+        video.srcObject = stream;
+        videoContainer.style.display = 'block';
+        cameraActive = true;
+        cameraStatus.textContent = 'Працює ✅';
+        cameraToggle.textContent = '📹 Вимкнути камеру';
+        cameraToggle.classList.add('active');
+        
+        detectionInfo.textContent = 'Камера працює! Змінюйте освітлення';
+        
+        // Заблокувати ручний контроль
+        manualControls.classList.add('disabled');
+        
+        // Почати простий аналіз
+        setTimeout(startSimpleAnalysis, 1000);
         
       } catch (error) {
         console.error('Помилка камери:', error);
-        detectionInfo.textContent = 'Помилка доступу до камери';
-        cameraStatus.textContent = 'Помилка доступу';
+        detectionInfo.textContent = 'ПОМИЛКА: ' + error.message;
+        cameraStatus.textContent = 'Помилка ❌';
+        
+        // Показати детальну інформацію про помилку
+        if (error.name === 'NotAllowedError') {
+          detectionInfo.textContent = 'Доступ до камери заборонено. Дозвольте доступ.';
+        } else if (error.name === 'NotFoundError') {
+          detectionInfo.textContent = 'Камера не знайдена на пристрої.';
+        } else {
+          detectionInfo.textContent = 'Невідома помилка камери: ' + error.name;
+        }
       }
     }
 
     function stopCamera() {
+      console.log('Зупинка камери...');
+      
       if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach(track => {
+          track.stop();
+          console.log('Зупинено трек:', track);
+        });
         stream = null;
       }
+      
       videoContainer.style.display = 'none';
       cameraActive = false;
-      isDetecting = false;
       cameraStatus.textContent = 'Вимкнена';
-      cameraToggle.textContent = '📹 Увімкнути камеру';
+      cameraToggle.textContent = '📹 Тест камери';
       cameraToggle.classList.remove('active');
-      detectionInfo.textContent = 'Очікування...';
+      detectionInfo.textContent = 'Камера вимкнена';
       
       // Розблокувати ручний контроль
       manualControls.classList.remove('disabled');
     }
 
-    // Розпізнавання емоцій
-    async function detectEmotion() {
-      if (!cameraActive || !modelsLoaded || isDetecting) {
-        return;
-      }
+    // Простий аналіз яскравості
+    function startSimpleAnalysis() {
+      if (!cameraActive) return;
       
-      isDetecting = true;
-
       try {
-        const detections = await faceapi
-          .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
-          .withFaceExpressions();
-
-        // Очистити overlay
-        const ctx = overlay.getContext('2d');
-        ctx.clearRect(0, 0, overlay.width, overlay.height);
-
-        if (detections.length > 0) {
-          const detection = detections[0];
-          const expressions = detection.expressions;
-          
-          // Знайти найбільшу емоцію
-          let maxEmotion = 'neutral';
-          let maxValue = 0;
-          
-          Object.keys(expressions).forEach(emotion => {
-            if (expressions[emotion] > maxValue) {
-              maxValue = expressions[emotion];
-              maxEmotion = emotion;
-            }
-          });
-          
-          // Перетворити назви емоцій
-          let mappedEmotion = 'neutral';
-          if (maxValue > 0.6) { // Тільки якщо впевненість > 60%
-            switch(maxEmotion) {
-              case 'happy':
-                mappedEmotion = 'happy';
-                break;
-              case 'sad':
-                mappedEmotion = 'sad';
-                break;
-              case 'angry':
-                mappedEmotion = 'angry';
-                break;
-              case 'fearful':
-              case 'disgusted':
-                mappedEmotion = 'angry';
-                break;
-              default:
-                mappedEmotion = 'neutral';
-            }
+        // Створити canvas для аналізу
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 240;
+        canvas.height = 180;
+        
+        // Аналіз кожні 500мс
+        const analyzer = setInterval(() => {
+          if (!cameraActive || !video.videoWidth) {
+            clearInterval(analyzer);
+            return;
           }
           
-          updateEmotion(mappedEmotion);
-          
-          detectionInfo.textContent = `${maxEmotion}: ${(maxValue * 100).toFixed(0)}%`;
-          
-          // Намалювати рамку навколо обличчя
-          const box = detection.detection.box;
-          ctx.strokeStyle = '#00ff00';
-          ctx.lineWidth = 2;
-          ctx.strokeRect(box.x, box.y, box.width, box.height);
-          
-        } else {
-          detectionInfo.textContent = 'Обличчя не знайдено';
-          updateEmotion('neutral');
-        }
+          try {
+            // Намалювати поточний кадр
+            ctx.drawImage(video, 0, 0, 240, 180);
+            
+            // Отримати дані пікселів
+            const imageData = ctx.getImageData(0, 0, 240, 180);
+            const pixels = imageData.data;
+            
+            // Обчислити середню яскравість
+            let totalBrightness = 0;
+            for (let i = 0; i < pixels.length; i += 4) {
+              const r = pixels[i];
+              const g = pixels[i + 1];
+              const b = pixels[i + 2];
+              totalBrightness += (r + g + b) / 3;
+            }
+            
+            const avgBrightness = totalBrightness / (pixels.length / 4);
+            
+            console.log('Яскравість:', avgBrightness.toFixed(2));
+            
+            // Визначити "емоцію" на основі яскравості
+            let detectedEmotion = 'neutral';
+            if (avgBrightness > 150) {
+              detectedEmotion = 'happy'; // Яскраво = швидко
+            } else if (avgBrightness < 50) {
+              detectedEmotion = 'sad'; // Темно = повільно  
+            } else if (avgBrightness < 100) {
+              detectedEmotion = 'angry'; // Середньо темно
+            }
+            
+            updateEmotion(detectedEmotion);
+            detectionInfo.textContent = `Яскравість: ${avgBrightness.toFixed(0)}`;
+            
+          } catch (analyzeError) {
+            console.error('Помилка аналізу:', analyzeError);
+          }
+        }, 500);
+        
       } catch (error) {
-        console.error('Помилка розпізнавання:', error);
-        detectionInfo.textContent = 'Помилка розпізнавання';
-      }
-
-      isDetecting = false;
-      
-      // Продовжити розпізнавання через 300мс
-      if (cameraActive) {
-        setTimeout(detectEmotion, 300);
+        console.error('Помилка створення аналізатора:', error);
       }
     }
 
@@ -398,23 +354,23 @@
       // Встановлення швидкості залежно від емоції
       switch (emotion) {
         case 'happy':
-          animationSpeed = 5; // Дуже швидко для веселої емоції!
-          currentEmotionSpan.textContent = 'Весела';
+          animationSpeed = 5; // Дуже швидко!
+          currentEmotionSpan.textContent = 'Швидкий';
           currentEmotionSpan.className = 'happy';
           break;
         case 'sad':
           animationSpeed = 0.2; // Дуже повільно
-          currentEmotionSpan.textContent = 'Сумна';
+          currentEmotionSpan.textContent = 'Повільний';
           currentEmotionSpan.className = 'sad';
           break;
         case 'angry':
-          animationSpeed = 0.4; // Повільно
-          currentEmotionSpan.textContent = 'Сердита';
+          animationSpeed = 0.5; // Середній
+          currentEmotionSpan.textContent = 'Середній';
           currentEmotionSpan.className = 'angry';
           break;
         default:
           animationSpeed = 1; // Нормально
-          currentEmotionSpan.textContent = 'Нейтральна';
+          currentEmotionSpan.textContent = 'Нормальний';
           currentEmotionSpan.className = 'neutral';
       }
       
@@ -494,6 +450,8 @@
     });
 
     cameraToggle.addEventListener('click', () => {
+      console.log('Кнопка камери натиснута. Поточний стан:', cameraActive);
+      
       if (cameraActive) {
         stopCamera();
       } else {
@@ -501,10 +459,11 @@
       }
     });
 
-    // Обробники кнопок емоцій (тільки коли камера вимкнена)
+    // Обробники кнопок емоцій
     emotionButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         if (!cameraActive) {
+          console.log('Ручна зміна емоції:', btn.dataset.emotion);
           updateEmotion(btn.dataset.emotion);
         }
       });
@@ -512,6 +471,16 @@
 
     // Ініціалізація
     updateScene();
+    
+    // Перевірка підтримки getUserMedia
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      console.log('✅ getUserMedia підтримується');
+      detectionInfo.textContent = 'Натисніть кнопку камери для тесту';
+    } else {
+      console.log('❌ getUserMedia НЕ підтримується');
+      detectionInfo.textContent = 'Камера не підтримується браузером';
+      cameraToggle.disabled = true;
+    }
   </script>
 </body>
 </html>
