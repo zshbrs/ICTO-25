@@ -1,450 +1,172 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <title>3D Тригонометричні функції - A-Frame</title>
-    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    <style>
-        body { 
-            margin: 0; 
-            font-family: 'Arial', sans-serif; 
-            background: #001122;
-        }
-        
-        .controls {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.9);
-            color: white;
-            padding: 15px;
-            border-radius: 8px;
-            z-index: 1000;
-            font-size: 14px;
-            min-width: 300px;
-        }
-        
-        .control-group {
-            margin-bottom: 12px;
-        }
-        
-        .slider {
-            width: 250px;
-            margin: 5px 0;
-        }
-        
-        .function-selector {
-            margin: 10px 0;
-        }
-        
-        .function-selector label {
-            display: block;
-            margin: 5px 0;
-            cursor: pointer;
-        }
-        
-        .function-selector input[type="checkbox"] {
-            margin-right: 8px;
-        }
-        
-        .values {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.9);
-            color: white;
-            padding: 15px;
-            border-radius: 8px;
-            z-index: 1000;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-        }
-        
-        .sin-color { color: #3498db; }
-        .cos-color { color: #e74c3c; }
-        .tan-color { color: #2ecc71; }
-        
-        button {
-            background: #2c3e50;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin: 2px;
-        }
-        
-        button:hover {
-            background: #34495e;
-        }
-        
-        button.active {
-            background: #3498db;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <title>Одиничне коло з проекціями</title>
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <style>
+    body { margin: 0; background: #001122; font-family: sans-serif; color: white; }
+    #ui {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.9);
+      padding: 15px;
+      border-radius: 10px;
+      z-index: 1000;
+      font-size: 14px;
+    }
+    #values {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.9);
+      padding: 10px;
+      font-family: monospace;
+      font-size: 14px;
+      border-radius: 10px;
+    }
+    .sin-color { color: #3498db; }
+    .cos-color { color: #e74c3c; }
+    .tan-color { color: #2ecc71; }
+  </style>
 </head>
 <body>
-    <div class="controls">
-        <div class="control-group">
-            <label>Кут: <span id="angleDisplay">0°</span> (<span id="radianDisplay">0.00</span> рад)</label>
-            <input type="range" id="angleSlider" class="slider" min="0" max="720" value="0" step="1">
-        </div>
-        
-        <div class="control-group">
-            <label>Швидкість анімації: <span id="speedDisplay">1x</span></label>
-            <input type="range" id="speedSlider" class="slider" min="0.1" max="5" value="1" step="0.1">
-        </div>
-        
-        <div class="function-selector">
-            <label><input type="checkbox" id="showSin" checked> <span class="sin-color">sin(θ)</span></label>
-            <label><input type="checkbox" id="showCos" checked> <span class="cos-color">cos(θ)</span></label>
-            <label><input type="checkbox" id="showTan" checked> <span class="tan-color">tan(θ)</span></label>
-        </div>
-        
-        <div class="control-group">
-            <input type="checkbox" id="animateCheck"> Анімація
-            <button id="resetBtn">Скинути</button>
-        </div>
-    </div>
+  <div id="ui">
+    <label>Кут: <span id="angleDisplay">0°</span> (<span id="radianDisplay">0.00</span> рад)</label><br />
+    <input type="range" min="0" max="360" value="0" id="angleSlider" /><br />
+    <label><input type="checkbox" id="showSin" checked /> <span class="sin-color">sin(θ)</span></label><br />
+    <label><input type="checkbox" id="showCos" checked /> <span class="cos-color">cos(θ)</span></label><br />
+    <label><input type="checkbox" id="showTan" checked /> <span class="tan-color">tan(θ)</span></label><br />
+    <label><input type="checkbox" id="animate" /> Анімація</label>
+  </div>
 
-    <div class="values">
-        <div class="sin-color">sin(θ) = <span id="sinValue">0.000</span></div>
-        <div class="cos-color">cos(θ) = <span id="cosValue">1.000</span></div>
-        <div class="tan-color">tan(θ) = <span id="tanValue">0.000</span></div>
-    </div>
+  <div id="values">
+    <div class="sin-color">sin(θ) = <span id="sinVal">0.000</span></div>
+    <div class="cos-color">cos(θ) = <span id="cosVal">1.000</span></div>
+    <div class="tan-color">tan(θ) = <span id="tanVal">0.000</span></div>
+  </div>
 
-    <a-scene embedded background="color: #001122">
-        <!-- Освітлення -->
-        <a-light type="ambient" color="#404040"></a-light>
-        <a-light type="directional" position="0 5 5" color="#ffffff"></a-light>
-        
-        <!-- Камера з орбітальними контролами -->
-        <a-camera 
-            position="8 4 8" 
-            look-at="0 0 0"
-            orbit-controls="
-                enableDamping: true; 
-                dampingFactor: 0.05;
-                autoRotate: false;
-                enablePan: true;
-                minDistance: 3;
-                maxDistance: 20;
-            ">
-        </a-camera>
+  <a-scene background="color: #001122">
+    <a-entity id="cameraRig">
+      <a-entity camera position="0 0 5" look-controls="enabled: true" wasd-controls="enabled: true"></a-entity>
+    </a-entity>
 
-        <!-- Координатні осі -->
-        <!-- X-вісь (червона) -->
-        <a-cylinder 
-            position="2.5 0 0" 
-            radius="0.02" 
-            height="5" 
-            rotation="0 0 90" 
-            color="#ff4444"
-            material="emissive: #220000; emissiveIntensity: 0.2">
-        </a-cylinder>
-        <!-- Y-вісь (зелена) -->
-        <a-cylinder 
-            position="0 2.5 0" 
-            radius="0.02" 
-            height="5" 
-            color="#44ff44"
-            material="emissive: #002200; emissiveIntensity: 0.2">
-        </a-cylinder>
-        <!-- Z-вісь (синя) -->
-        <a-cylinder 
-            position="0 0 2.5" 
-            radius="0.02" 
-            height="5" 
-            rotation="90 0 0" 
-            color="#4444ff"
-            material="emissive: #000022; emissiveIntensity: 0.2">
-        </a-cylinder>
+    <a-entity id="circleGroup">
+      <a-ring radius-inner="0.99" radius-outer="1.01" color="white"></a-ring>
+      <a-entity line="start: -1.5 0 0; end: 1.5 0 0; color: white"></a-entity>
+      <a-entity line="start: 0 -1.5 0; end: 0 1.5 0; color: white"></a-entity>
 
-        <!-- Одиничне коло -->
-        <a-ring 
-            id="unitCircle"
-            position="0 0 0" 
-            radius-inner="1.98" 
-            radius-outer="2.02" 
-            rotation="-90 0 0"
-            color="#ffffff" 
-            material="emissive: #333333; emissiveIntensity: 0.3; transparent: true; opacity: 0.8">
-        </a-ring>
+      <a-entity id="labels">
+        <a-text value=" 0° " position="1.3 0 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
+        <a-text value=" 45° " position="0.92 0.92 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
+        <a-text value=" 90° " position="0 1.3 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
+        <a-text value=" 135° " position="-0.92 0.92 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
+        <a-text value=" 180° " position="-1.3 0 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
+        <a-text value=" 225° " position="-0.92 -0.92 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
+        <a-text value=" 270° " position="0 -1.3 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
+        <a-text value=" 315° " position="0.92 -0.92 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
+        <a-text value="1" position="0 1.05 0" color="red" align="center" side="double" scale="1 1 1"></a-text>
+        <a-text value="-1" position="0 -1.05 0" color="red" align="center" side="double" scale="1 1 1"></a-text>
+        <a-text value="1" position="1.05 0 0" color="red" align="center" side="double" scale="1 1 1"></a-text>
+        <a-text value="-1" position="-1.05 0 0" color="red" align="center" side="double" scale="1 1 1"></a-text>
+      </a-entity>
 
-        <!-- Підлога (сітка) -->
-        <a-plane 
-            position="0 -0.1 0" 
-            rotation="-90 0 0" 
-            width="10" 
-            height="10" 
-            color="#001122"
-            material="wireframe: true; wireframeLinewidth: 1; color: #333344">
-        </a-plane>
+      <a-entity id="radiusVec" line="start: 0 0 0; end: 1 0 0; color: yellow"></a-entity>
+      <a-sphere id="dot" radius="0.05" color="yellow" position="1 0 0"></a-sphere>
+      <a-entity id="sinLine" line="start: 0 0 0; end: 0 0 0; color: #3498db"></a-entity>
+      <a-entity id="sinHelper" line="start: 0 0 0; end: 0 0 0; color: #cccccc"></a-entity>
+      <a-entity id="cosLine" line="start: 0 0 0; end: 0 0 0; color: #e74c3c"></a-entity>
+      <a-entity id="cosHelper" line="start: 0 0 0; end: 0 0 0; color: #cccccc"></a-entity>
+      <a-entity id="tanLine" line="start: 0 0 0; end: 0 0 0; color: #2ecc71"></a-entity>
+      <a-entity id="tanHelper" line="start: 0 0 0; end: 0 0 0; color: #cccccc"></a-entity>
+    </a-entity>
+  </a-scene>
 
-        <!-- Радіус-вектор -->
-        <a-cylinder 
-            id="radiusVector"
-            position="1 0 0" 
-            radius="0.03" 
-            height="2" 
-            rotation="0 0 90" 
-            color="#ffff00"
-            material="emissive: #444400; emissiveIntensity: 0.5">
-        </a-cylinder>
+  <script>
+    const angleSlider = document.getElementById('angleSlider');
+    const angleDisplay = document.getElementById('angleDisplay');
+    const radianDisplay = document.getElementById('radianDisplay');
+    const animateCheck = document.getElementById('animate');
+    const showSin = document.getElementById('showSin');
+    const showCos = document.getElementById('showCos');
+    const showTan = document.getElementById('showTan');
+    const sinVal = document.getElementById('sinVal');
+    const cosVal = document.getElementById('cosVal');
+    const tanVal = document.getElementById('tanVal');
 
-        <!-- Точка на колі -->
-        <a-sphere 
-            id="pointOnCircle"
-            position="2 0 0" 
-            radius="0.08" 
-            color="#ffff00"
-            material="emissive: #444400; emissiveIntensity: 0.5">
-        </a-sphere>
+    const dot = document.getElementById('dot');
+    const radiusVec = document.getElementById('radiusVec');
+    const sinLine = document.getElementById('sinLine');
+    const sinHelper = document.getElementById('sinHelper');
+    const cosLine = document.getElementById('cosLine');
+    const cosHelper = document.getElementById('cosHelper');
+    const tanLine = document.getElementById('tanLine');
+    const tanHelper = document.getElementById('tanHelper');
 
-        <!-- Проекції функцій -->
-        <!-- Sin проекція (синя) -->
-        <a-cylinder 
-            id="sinProjection"
-            position="0 0 0" 
-            radius="0.04" 
-            height="0" 
-            color="#3498db"
-            material="emissive: #001144; emissiveIntensity: 0.4"
-            visible="true">
-        </a-cylinder>
+    let angle = 0;
+    let animating = false;
 
-        <!-- Cos проекція (червона) -->
-        <a-cylinder 
-            id="cosProjection"
-            position="0 0 0" 
-            radius="0.04" 
-            height="0" 
-            rotation="0 0 90" 
-            color="#e74c3c"
-            material="emissive: #440011; emissiveIntensity: 0.4"
-            visible="true">
-        </a-cylinder>
+    function updateScene() {
+      const rad = angle * Math.PI / 180;
+      const sin = Math.sin(rad);
+      const cos = Math.cos(rad);
+      const tan = Math.tan(rad);
 
-        <!-- Tan лінія (зелена) -->
-        <a-cylinder 
-            id="tanLine"
-            position="2 0 0" 
-            radius="0.04" 
-            height="0" 
-            color="#2ecc71"
-            material="emissive: #114400; emissiveIntensity: 0.4"
-            visible="true">
-        </a-cylinder>
+      angleDisplay.textContent = angle;
+      radianDisplay.textContent = rad.toFixed(2);
+      sinVal.textContent = sin.toFixed(3);
+      cosVal.textContent = cos.toFixed(3);
+      tanVal.textContent = Math.abs(cos) < 0.01 ? '∞' : tan.toFixed(3);
 
-        <!-- Вертикальна лінія для тангенса -->
-        <a-cylinder 
-            position="2 0 0" 
-            radius="0.01" 
-            height="8" 
-            color="#666666"
-            material="transparent: true; opacity: 0.3"
-            visible="true">
-        </a-cylinder>
+      dot.setAttribute('position', `${cos} ${sin} 0`);
+      radiusVec.setAttribute('line', `start: 0 0 0; end: ${cos} ${sin} 0`);
 
-        <!-- Графік функцій (спрощений 3D варіант) -->
-        <a-entity id="graphContainer" position="5 0 0">
-            <!-- Осі для графіка -->
-            <a-cylinder position="0 0 0" radius="0.02" height="12" rotation="0 0 90" color="#666666"></a-cylinder>
-            <a-cylinder position="0 0 0" radius="0.02" height="6" color="#666666"></a-cylinder>
-            
-            <!-- Точки графіка будуть додаватися динамічно -->
-        </a-entity>
+      if (showSin.checked) {
+        sinLine.setAttribute('line', `start: 0 0 0; end: 0 ${sin} 0`);
+        sinHelper.setAttribute('line', `start: ${cos} ${sin} 0; end: 0 ${sin} 0`);
+      } else {
+        sinLine.setAttribute('line', `start: 0 0 0; end: 0 0 0`);
+        sinHelper.setAttribute('line', `start: 0 0 0; end: 0 0 0`);
+      }
 
-        <!-- Підписи та значення в 3D просторі -->
-        <a-text 
-            id="sinLabel"
-            position="0.5 1 0.5" 
-            value="sin" 
-            color="#3498db" 
-            scale="0.8 0.8 0.8"
-            look-at="[camera]">
-        </a-text>
+      if (showCos.checked) {
+        cosLine.setAttribute('line', `start: 0 0 0; end: ${cos} 0 0`);
+        cosHelper.setAttribute('line', `start: ${cos} ${sin} 0; end: ${cos} 0 0`);
+      } else {
+        cosLine.setAttribute('line', `start: 0 0 0; end: 0 0 0`);
+        cosHelper.setAttribute('line', `start: 0 0 0; end: 0 0 0`);
+      }
 
-        <a-text 
-            id="cosLabel"
-            position="1 0.5 0.5" 
-            value="cos" 
-            color="#e74c3c" 
-            scale="0.8 0.8 0.8"
-            look-at="[camera]">
-        </a-text>
+      if (showTan.checked && Math.abs(cos) > 0.01 && Math.abs(tan) < 10) {
+        const tanY = sin / cos;
+        tanLine.setAttribute('line', `start: 1 0 0; end: 1 ${tanY} 0`);
+        tanHelper.setAttribute('line', `start: 1 ${tanY} 0; end: ${cos} ${sin} 0`);
+      } else {
+        tanLine.setAttribute('line', `start: 0 0 0; end: 0 0 0`);
+        tanHelper.setAttribute('line', `start: 0 0 0; end: 0 0 0`);
+      }
+    }
 
-        <a-text 
-            id="tanLabel"
-            position="2.5 1 0.5" 
-            value="tan" 
-            color="#2ecc71" 
-            scale="0.8 0.8 0.8"
-            look-at="[camera]">
-        </a-text>
+    angleSlider.addEventListener('input', () => {
+      angle = parseInt(angleSlider.value);
+      updateScene();
+    });
 
-        <!-- Підписи кутів -->
-        <a-text position="2.2 0 0.3" value="0°" color="#ffffff" scale="0.6 0.6 0.6" look-at="[camera]"></a-text>
-        <a-text position="0 0 2.3" value="90°" color="#ffffff" scale="0.6 0.6 0.6" look-at="[camera]"></a-text>
-        <a-text position="-2.2 0 0.3" value="180°" color="#ffffff" scale="0.6 0.6 0.6" look-at="[camera]"></a-text>
-        <a-text position="0 0 -2.3" value="270°" color="#ffffff" scale="0.6 0.6 0.6" look-at="[camera]"></a-text>
-    </a-scene>
+    animateCheck.addEventListener('change', () => {
+      animating = animateCheck.checked;
+      if (animating) animate();
+    });
 
-    <script>
-        let currentAngle = 0;
-        let isAnimating = false;
-        let animationSpeed = 1;
-        let animationId;
+    function animate() {
+      if (!animating) return;
+      angle = (angle + 1) % 360;
+      angleSlider.value = angle;
+      updateScene();
+      requestAnimationFrame(animate);
+    }
 
-        // DOM елементи
-        const angleSlider = document.getElementById('angleSlider');
-        const angleDisplay = document.getElementById('angleDisplay');
-        const radianDisplay = document.getElementById('radianDisplay');
-        const speedSlider = document.getElementById('speedSlider');
-        const speedDisplay = document.getElementById('speedDisplay');
-        const animateCheck = document.getElementById('animateCheck');
-        const resetBtn = document.getElementById('resetBtn');
-        
-        const sinValue = document.getElementById('sinValue');
-        const cosValue = document.getElementById('cosValue');
-        const tanValue = document.getElementById('tanValue');
-
-        const showSin = document.getElementById('showSin');
-        const showCos = document.getElementById('showCos');
-        const showTan = document.getElementById('showTan');
-
-        // A-Frame елементи
-        const radiusVector = document.getElementById('radiusVector');
-        const pointOnCircle = document.getElementById('pointOnCircle');
-        const sinProjection = document.getElementById('sinProjection');
-        const cosProjection = document.getElementById('cosProjection');
-        const tanLine = document.getElementById('tanLine');
-        const sinLabel = document.getElementById('sinLabel');
-        const cosLabel = document.getElementById('cosLabel');
-        const tanLabel = document.getElementById('tanLabel');
-
-        function updateTrigonometry(angleDegrees) {
-            currentAngle = angleDegrees;
-            const angleRad = (angleDegrees * Math.PI) / 180;
-            
-            const sinVal = Math.sin(angleRad);
-            const cosVal = Math.cos(angleRad);
-            const tanVal = Math.tan(angleRad);
-            
-            // Оновлення значень в інтерфейсі
-            angleDisplay.textContent = `${Math.round(angleDegrees)}°`;
-            radianDisplay.textContent = angleRad.toFixed(2);
-            sinValue.textContent = sinVal.toFixed(3);
-            cosValue.textContent = cosVal.toFixed(3);
-            
-            if (Math.abs(cosVal) < 0.001) {
-                tanValue.textContent = '∞';
-            } else if (Math.abs(tanVal) > 1000) {
-                tanValue.textContent = tanVal > 0 ? '+∞' : '-∞';
-            } else {
-                tanValue.textContent = tanVal.toFixed(3);
-            }
-            
-            angleSlider.value = angleDegrees;
-
-            // Позиція точки на одиничному колі
-            const x = cosVal * 2;
-            const z = sinVal * 2;
-
-            // Оновлення позиції точки на колі
-            pointOnCircle.setAttribute('position', `${x} 0 ${z}`);
-
-            // Оновлення радіус-вектора
-            const vectorLength = 2;
-            const vectorX = cosVal;
-            const vectorZ = sinVal;
-            radiusVector.setAttribute('position', `${vectorX} 0 ${vectorZ}`);
-            radiusVector.setAttribute('rotation', `0 ${-angleDegrees} 90`);
-
-            // Оновлення проекцій
-            if (showSin.checked) {
-                sinProjection.setAttribute('height', Math.abs(sinVal * 2));
-                sinProjection.setAttribute('position', `0 ${sinVal} 0`);
-                sinProjection.setAttribute('visible', true);
-                sinLabel.setAttribute('position', `0.5 ${sinVal + 0.5} 0.5`);
-                sinLabel.setAttribute('value', `sin = ${sinVal.toFixed(2)}`);
-            } else {
-                sinProjection.setAttribute('visible', false);
-            }
-
-            if (showCos.checked) {
-                cosProjection.setAttribute('height', Math.abs(cosVal * 2));
-                cosProjection.setAttribute('position', `${cosVal} 0 0`);
-                cosProjection.setAttribute('visible', true);
-                cosLabel.setAttribute('position', `${cosVal + 0.5} 0.5 0.5`);
-                cosLabel.setAttribute('value', `cos = ${cosVal.toFixed(2)}`);
-            } else {
-                cosProjection.setAttribute('visible', false);
-            }
-
-            if (showTan.checked && Math.abs(cosVal) > 0.01) {
-                const tanHeight = Math.min(Math.abs(tanVal * 2), 6);
-                tanLine.setAttribute('height', tanHeight);
-                tanLine.setAttribute('position', `2 ${tanVal} 0`);
-                tanLine.setAttribute('visible', true);
-                tanLabel.setAttribute('position', `2.5 ${tanVal + 0.5} 0.5`);
-                tanLabel.setAttribute('value', `tan = ${tanVal.toFixed(2)}`);
-            } else {
-                tanLine.setAttribute('visible', false);
-            }
-        }
-
-        function animate() {
-            if (isAnimating) {
-                currentAngle = (currentAngle + animationSpeed * 2) % 360;
-                updateTrigonometry(currentAngle);
-                animationId = requestAnimationFrame(animate);
-            }
-        }
-
-        // Обробники подій
-        angleSlider.addEventListener('input', (e) => {
-            if (!isAnimating) {
-                updateTrigonometry(parseInt(e.target.value));
-            }
-        });
-
-        speedSlider.addEventListener('input', (e) => {
-            animationSpeed = parseFloat(e.target.value);
-            speedDisplay.textContent = `${animationSpeed}x`;
-        });
-
-        animateCheck.addEventListener('change', (e) => {
-            isAnimating = e.target.checked;
-            if (isAnimating) {
-                animate();
-            } else {
-                cancelAnimationFrame(animationId);
-            }
-        });
-
-        resetBtn.addEventListener('click', () => {
-            isAnimating = false;
-            animateCheck.checked = false;
-            cancelAnimationFrame(animationId);
-            updateTrigonometry(0);
-        });
-
-        // Обробники для відображення функцій
-        showSin.addEventListener('change', () => {
-            updateTrigonometry(currentAngle);
-        });
-
-        showCos.addEventListener('change', () => {
-            updateTrigonometry(currentAngle);
-        });
-
-        showTan.addEventListener('change', () => {
-            updateTrigonometry(currentAngle);
-        });
-
-        // Ініціалізація
-        updateTrigonometry(0);
-    </script>
+    updateScene();
+  </script>
 </body>
 </html>
