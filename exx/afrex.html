@@ -1,13 +1,14 @@
-<!DOCTYPE html>
+<!-- Секція розпізнавання емоцій -->
+    <div id="emotionSection">
+      <div style="font-weight: 600; margin-bottom: 10px;"><!DOCTYPE html>
 <html lang="uk">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🎓 Емоційне тригонометричне коло</title>
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <!-- TensorFlow.js для розпізнавання емоцій -->
+  <!-- Спрощений підхід без складних AI бібліотек -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.11/dist/face-api.min.js"></script>
   
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -395,7 +396,7 @@
     
     <!-- Секція розпізнавання емоцій -->
     <div id="emotionSection">
-      <div style="font-weight: 600; margin-bottom: 10px;">📸 Емоційний детектор</div>
+      <div style="font-weight: 600; margin-bottom: 10px;">📸 Камера керування</div>
       
       <div id="cameraContainer">
         <video id="videoElement" autoplay muted playsinline></video>
@@ -403,12 +404,17 @@
       </div>
       
       <div id="emotionDisplay" class="emotion-display emotion-neutral">
-        😐 Нейтральний настрій
+        😐 Рух не виявлений
       </div>
       
       <button id="startCamera" class="camera-btn">🔴 Увімкнути камеру</button>
       <button id="stopCamera" class="camera-btn">⏹️ Вимкнути</button>
       <button id="testEmotions" class="camera-btn">🧪 Тест емоцій</button>
+      
+      <div style="font-size: 11px; margin-top: 8px; opacity: 0.8;">
+        💡 Рухайтеся активно = швидко, сидіть спокійно = повільно
+      </div>
+    </div>
     </div>
 
     <!-- Швидкість анімації -->
@@ -418,7 +424,7 @@
         <span class="speed-value">Швидкість: <span id="speedValue">1x</span></span>
       </div>
       <div style="font-size: 12px; color: #6c757d;">
-        😊 Веселий = швидко | 😐 Спокійний = нормально | 😢 Сумний = повільно
+        🏃 Активний рух = швидко | 😐 Спокій = нормально | 🧘 Нерухомість = повільно
       </div>
     </div>
     
@@ -791,121 +797,146 @@
       }
     }
 
-    // Ініціалізація Face-API
-    async function initializeFaceAPI() {
-      try {
-        console.log('Завантаження моделей Face-API...');
-        
-        // Показуємо індикатор завантаження
-        emotionDisplay.innerHTML = '<div class="loading-spinner"></div>Завантаження моделей...';
-        
-        // Використовуємо публічні моделі з GitHub
-        const MODEL_URL = 'https://raw.githubusercontent.com/vladmandic/face-api/master/model/';
-        
-        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-        await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
-        
-        console.log('Моделі завантажені успішно');
-        isModelLoaded = true;
-        
-        emotionDisplay.textContent = '✅ Моделі готові';
-        emotionDisplay.className = 'emotion-display emotion-neutral';
-        
-        return true;
-      } catch (error) {
-        console.error('Помилка завантаження моделей:', error);
-        emotionDisplay.textContent = '❌ Помилка завантаження';
-        emotionDisplay.className = 'emotion-display emotion-sad';
-        
-        // Спробуємо альтернативний спосіб
-        return await fallbackEmotionDetection();
-      }
-    }
-
-    // Альтернативний спосіб розпізнавання емоцій (простіший)
-    async function fallbackEmotionDetection() {
-      console.log('Використовуємо альтернативний метод розпізнавання...');
-      
-      // Простий детектор на основі аналізу зображення
-      emotionDisplay.textContent = '🔄 Спрощений режим';
+    // Ініціалізація простого детектора руху
+    async function initializeMotionDetection() {
+      console.log('Ініціалізація детектора руху...');
+      emotionDisplay.textContent = '✅ Детектор руху готовий';
       emotionDisplay.className = 'emotion-display emotion-neutral';
-      
-      // Запускаємо простий аналізатор
-      startSimpleEmotionDetection();
       return true;
     }
 
-    // Простий аналізатор емоцій на основі руху та яскравості
-    function startSimpleEmotionDetection() {
+    // Простий детектор руху
+    function startMotionDetection() {
       if (!cameraActive) return;
       
       detectionActive = true;
-      detectionStatus.textContent = 'Спрощений режим';
+      detectionStatus.textContent = 'Детекція руху';
       detectionStatus.className = 'status-active';
       
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       
       let prevImageData = null;
-      let emotionCycle = 0;
+      let movementHistory = [];
+      let frameCount = 0;
       
-      function simpleDetect() {
+      function detectMotion() {
         if (!detectionActive || !cameraActive) return;
         
         try {
-          canvas.width = videoElement.videoWidth || 320;
-          canvas.height = videoElement.videoHeight || 240;
+          // Встановлюємо розмір canvas
+          const videoWidth = videoElement.videoWidth || 320;
+          const videoHeight = videoElement.videoHeight || 240;
           
-          ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          if (videoWidth === 0 || videoHeight === 0) {
+            setTimeout(detectMotion, 100);
+            return;
+          }
           
-          // Аналізуємо зміни в зображенні для визначення руху
+          canvas.width = videoWidth;
+          canvas.height = videoHeight;
+          
+          // Малюємо поточний кадр
+          ctx.drawImage(videoElement, 0, 0, videoWidth, videoHeight);
+          const imageData = ctx.getImageData(0, 0, videoWidth, videoHeight);
+          
           let movement = 0;
-          let brightness = 0;
           
-          if (prevImageData) {
-            for (let i = 0; i < imageData.data.length; i += 4) {
-              const diff = Math.abs(imageData.data[i] - prevImageData.data[i]);
-              movement += diff;
-              brightness += imageData.data[i];
+          if (prevImageData && prevImageData.data.length === imageData.data.length) {
+            // Порівнюємо з попереднім кадром
+            for (let i = 0; i < imageData.data.length; i += 16) { // Кожен 4-й піксель для швидкості
+              const currentPixel = imageData.data[i] + imageData.data[i+1] + imageData.data[i+2];
+              const prevPixel = prevImageData.data[i] + prevImageData.data[i+1] + prevImageData.data[i+2];
+              movement += Math.abs(currentPixel - prevPixel);
             }
           }
           
           prevImageData = imageData;
           
-          // Циклічна зміна емоцій для демонстрації (кожні 5 секунд)
-          emotionCycle = (emotionCycle + 1) % 300; // 300 кадрів ≈ 5 секунд
+          // Зберігаємо історію руху
+          movementHistory.push(movement);
+          if (movementHistory.length > 10) {
+            movementHistory.shift();
+          }
           
-          let emotion = 'neutral';
-          let confidence = 0.7;
+          // Обчислюємо середній рух
+          const avgMovement = movementHistory.reduce((a, b) => a + b, 0) / movementHistory.length;
           
-          if (emotionCycle < 100) {
-            emotion = 'happy';
-            confidence = 0.8;
-          } else if (emotionCycle < 200) {
-            emotion = 'neutral';
-            confidence = 0.9;
+          // Визначаємо рівень активності
+          let activityLevel = 'calm';
+          let emoji = '😐';
+          let speed = 1;
+          let description = 'Спокій';
+          
+          if (avgMovement > 5000) {
+            activityLevel = 'very_active';
+            emoji = '🏃';
+            speed = 3;
+            description = 'Дуже активно';
+          } else if (avgMovement > 2000) {
+            activityLevel = 'active';
+            emoji = '🤸';
+            speed = 2;
+            description = 'Активно';
+          } else if (avgMovement > 500) {
+            activityLevel = 'moderate';
+            emoji = '🚶';
+            speed = 1.5;
+            description = 'Помірно';
+          } else if (avgMovement > 100) {
+            activityLevel = 'calm';
+            emoji = '😐';
+            speed = 1;
+            description = 'Спокійно';
           } else {
-            emotion = 'sad';
-            confidence = 0.7;
+            activityLevel = 'still';
+            emoji = '🧘';
+            speed = 0.5;
+            description = 'Нерухомість';
           }
           
-          // Додаємо варіацію на основі руху
-          if (movement > 10000) {
-            emotion = 'surprised';
-            confidence = 0.8;
-          }
+          // Оновлюємо швидкість
+          updateMotionSpeed(activityLevel, speed, emoji, description, avgMovement);
           
-          updateEmotion(emotion, confidence);
+          frameCount++;
           
         } catch (error) {
-          console.error('Помилка простого детектора:', error);
+          console.error('Помилка детекції руху:', error);
         }
         
-        setTimeout(simpleDetect, 200);
+        // Продовжуємо детекцію
+        if (detectionActive) {
+          setTimeout(detectMotion, 100); // Кожні 100мс
+        }
       }
       
-      simpleDetect();
+      // Даємо час камері ініціалізуватися
+      setTimeout(detectMotion, 500);
+    }
+
+    // Оновлення швидкості на основі руху
+    function updateMotionSpeed(activityLevel, speed, emoji, description, movement) {
+      emotionSpeed = speed;
+      speedEmoji.textContent = emoji;
+      speedValue.textContent = `${speed}x`;
+      
+      let className = 'emotion-neutral';
+      if (speed > 2) {
+        className = 'emotion-happy';
+      } else if (speed < 1) {
+        className = 'emotion-sad';
+      }
+      
+      emotionDisplay.textContent = `${emoji} ${description} (${Math.round(movement)})`;
+      emotionDisplay.className = `emotion-display ${className}`;
+      
+      // Додавання ефекту пульсації при зміні активності
+      if (Math.random() < 0.1) { // 10% шанс
+        emotionDisplay.classList.add('pulse');
+        setTimeout(() => {
+          emotionDisplay.classList.remove('pulse');
+        }, 1000);
+      }
     }
 
     // Запуск камери
@@ -936,15 +967,8 @@
           canvas.height = video.videoHeight;
         });
         
-        // Ініціалізація моделей та початок детекції
-        if (!isModelLoaded) {
-          const modelsLoaded = await initializeFaceAPI();
-          if (modelsLoaded) {
-            startEmotionDetection();
-          }
-        } else {
-          startEmotionDetection();
-        }
+        // Ініціалізація детектора руху
+        startMotionDetection();
         
       } catch (error) {
         console.error('Помилка доступу до камери:', error);
@@ -971,19 +995,13 @@
       startCameraBtn.classList.remove('active');
       startCameraBtn.textContent = '🔴 Увімкнути камеру';
       
-      // Скидання емоції до нейтральної
-      updateEmotion('neutral', 0.8);
+      // Скидання до нейтрального стану
+      updateMotionSpeed('calm', 1, '😐', 'Камера вимкнена', 0);
     }
 
-    // Початок розпізнавання емоцій
+    // Початок розпізнавання руху
     async function startEmotionDetection() {
-      if (!isModelLoaded || !cameraActive) return;
-      
-      detectionActive = true;
-      detectionStatus.textContent = 'Активне';
-      detectionStatus.className = 'status-active';
-      
-      detectEmotions();
+      startMotionDetection();
     }
 
     // Розпізнавання емоцій
@@ -1122,29 +1140,36 @@
       checkbox.addEventListener('change', updateScene);
     });
 
-    // Тестування емоцій
+    // Тестування різних швидкостей
     function testEmotions() {
-      const emotions = ['happy', 'sad', 'angry', 'surprised', 'neutral'];
+      const motionLevels = [
+        {level: 'still', speed: 0.5, emoji: '🧘', desc: 'Нерухомість'},
+        {level: 'calm', speed: 1, emoji: '😐', desc: 'Спокій'},
+        {level: 'moderate', speed: 1.5, emoji: '🚶', desc: 'Помірний рух'},
+        {level: 'active', speed: 2, emoji: '🤸', desc: 'Активність'},
+        {level: 'very_active', speed: 3, emoji: '🏃', desc: 'Дуже активно'}
+      ];
+      
       let currentIndex = 0;
       
-      emotionDisplay.textContent = '🧪 Тестування емоцій...';
+      emotionDisplay.textContent = '🧪 Тестування швидкостей...';
       
-      function cycleEmotion() {
-        if (currentIndex < emotions.length) {
-          const emotion = emotions[currentIndex];
-          updateEmotion(emotion, 0.9);
+      function cycleMotion() {
+        if (currentIndex < motionLevels.length) {
+          const motion = motionLevels[currentIndex];
+          updateMotionSpeed(motion.level, motion.speed, motion.emoji, motion.desc, 1000);
           
           setTimeout(() => {
             currentIndex++;
-            cycleEmotion();
-          }, 2000); // Кожна емоція по 2 секунди
+            cycleMotion();
+          }, 2000); // Кожна швидкість по 2 секунди
         } else {
-          updateEmotion('neutral', 0.8);
-          showTooltip('Тестування завершено! Всі емоції працюють правильно.', 3000);
+          updateMotionSpeed('calm', 1, '😐', 'Тест завершено', 0);
+          showTooltip('Тестування завершено! Всі швидкості працюють правильно.', 3000);
         }
       }
       
-      cycleEmotion();
+      cycleMotion();
     }
 
     // Обробники камери
@@ -1277,12 +1302,12 @@
       
       // Вітальне повідомлення
       setTimeout(() => {
-        showTooltip('🎯 Емоційне тригонометричне коло готове! Увімкніть камеру для керування емоціями', 5000);
+        showTooltip('🎯 Камера-керування готове! Увімкніть камеру та рухайтеся активно!', 5000);
       }, 1000);
 
       // Підказка про функції
       setTimeout(() => {
-        showTooltip('📸 Посміхніться для прискорення анімації або засмутьтеся для уповільнення!', 4000);
+        showTooltip('🏃 Рухайтеся активно = швидке обертання, сидіть спокійно = повільне!', 4000);
       }, 7000);
     });
 
@@ -1294,14 +1319,11 @@
       }
     });
 
-    // Автоматична ініціалізація Face-API при завантаженні сторінки
-    initializeFaceAPI().then((success) => {
+    // Автоматична ініціалізація при завантаженні сторінки
+    initializeMotionDetection().then((success) => {
       if (success) {
-        console.log('Face-API готовий до використання');
-        showTooltip('✅ AI система готова! Спробуйте кнопку "🧪 Тест емоцій"', 4000);
-      } else {
-        console.error('Не вдалося ініціалізувати Face-API');
-        showTooltip('⚠️ Використовується спрощений режим розпізнавання', 5000);
+        console.log('Детектор руху готовий');
+        showTooltip('✅ Детектор руху готовий! Спробуйте кнопку "🧪 Тест емоцій"', 4000);
       }
     });
 
