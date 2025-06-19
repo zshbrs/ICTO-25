@@ -1,345 +1,230 @@
 <!DOCTYPE html>
-<html>
+<html lang="uk">
 <head>
-    <meta charset="utf-8">
-    <title>AR-сцена </title>
-    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Сцена з двома моделями</title>
     <style>
-        .arjs-loader {
-            height: 100%;
-            width: 100%;
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        
+        #info {
             position: absolute;
-            top: 0;
-            left: 0;
-            background-color: rgba(0, 0, 0, 0.8);
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .arjs-loader div {
-            text-align: center;
-            font-size: 1.25em;
+            top: 20px;
+            left: 20px;
             color: white;
-            line-height: 1.4;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 100;
+            backdrop-filter: blur(10px);
         }
-        .controls {
-            position: fixed;
+        
+        #controls {
+            position: absolute;
             bottom: 20px;
             left: 20px;
-            z-index: 1000;
-            background: rgba(0, 0, 0, 0.7);
             color: white;
-            padding: 10px;
-            border-radius: 5px;
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            max-width: 200px;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 100;
+            backdrop-filter: blur(10px);
         }
-        .debug-info {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-            background: rgba(0, 0, 0, 0.7);
+        
+        button {
+            background: #4CAF50;
             color: white;
-            padding: 10px;
+            border: none;
+            padding: 8px 16px;
+            margin: 2px;
             border-radius: 5px;
-            font-family: Arial, sans-serif;
-            font-size: 10px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #45a049;
         }
     </style>
 </head>
-<body style="margin: 0px; overflow: hidden;">
-    <!-- Завантажувач -->
-    <div class="arjs-loader">
-        <div>
-            Завантаження AR...<br>
-            Дозвольте доступ до GPS та камери<br>
-            Тримайте пристрій вертикально
-        </div>
+<body>
+    <div id="container"></div>
+    
+    <div id="info">
+        <h3>3D Сцена</h3>
+        <p>Ліва модель: Куб (синій)</p>
+        <p>Права модель: Сфера (червона)</p>
+        <p>Використовуйте мишу для обертання камери</p>
+    </div>
+    
+    <div id="controls">
+        <button onclick="resetCamera()">Скинути камеру</button>
+        <button onclick="toggleAnimation()">Анімація</button>
+        <button onclick="toggleWireframe()">Каркас</button>
     </div>
 
-    <!-- Інформація про керування -->
-    <div class="controls">
-        <div>📱 Оберніться навколо себе</div>
-        <div>👈 Ліва модель - на заході</div>
-        <div>👉 Права модель - на сході</div>
-        <div>👆 Натисніть на об'єкти</div>
-    </div>
-
-    <!-- Налагоджувальна інформація -->
-    <div class="debug-info" id="debug">
-        <div>GPS: Очікування...</div>
-        <div>Компас: Очікування...</div>
-    </div>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // Компонент для анімації обертання
-        AFRAME.registerComponent('rotation-animation', {
-            schema: {
-                speed: {default: 1},
-                axis: {default: 'y'}
-            },
-            init: function () {
-                var el = this.el;
-                var data = this.data;
-                
-                var rotation = '0 360 0';
-                if (data.axis === 'x') rotation = '360 0 0';
-                if (data.axis === 'z') rotation = '0 0 360';
-                
-                el.setAttribute('animation', {
-                    property: 'rotation',
-                    to: rotation,
-                    loop: true,
-                    dur: 5000 / data.speed
-                });
-            }
-        });
-
-        // Компонент для плавного руху
-        AFRAME.registerComponent('float-animation', {
-            init: function () {
-                var el = this.el;
-                var originalY = el.getAttribute('position').y;
-                
-                el.setAttribute('animation__float', {
-                    property: 'position.y',
-                    to: originalY + 1,
-                    dur: 3000,
-                    easing: 'easeInOutSine',
-                    dir: 'alternate',
-                    loop: true
-                });
-            }
-        });
-
-        // Компонент для інтерактивності
-        AFRAME.registerComponent('interactive', {
-            schema: {
-                colors: {default: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD']}
-            },
-            init: function () {
-                var el = this.el;
-                var data = this.data;
-                var colorIndex = 0;
-                var originalScale = el.getAttribute('scale');
-                
-                el.addEventListener('click', function () {
-                    // Зміна кольору
-                    colorIndex = (colorIndex + 1) % data.colors.length;
-                    el.setAttribute('material', 'color', data.colors[colorIndex]);
-                    
-                    // Анімація масштабування
-                    el.setAttribute('animation__scale', {
-                        property: 'scale',
-                        to: `${originalScale.x * 1.5} ${originalScale.y * 1.5} ${originalScale.z * 1.5}`,
-                        dur: 200,
-                        easing: 'easeOutQuad',
-                        dir: 'alternate',
-                        loop: 1
-                    });
-                    
-                    console.log('Клік на AR об\'єкт!');
-                });
-
-                // Ефект наведення (для веб-версії)
-                el.addEventListener('mouseenter', function () {
-                    el.setAttribute('animation__hover', {
-                        property: 'scale',
-                        to: `${originalScale.x * 1.1} ${originalScale.y * 1.1} ${originalScale.z * 1.1}`,
-                        dur: 200
-                    });
-                });
-
-                el.addEventListener('mouseleave', function () {
-                    el.setAttribute('animation__hover', {
-                        property: 'scale',
-                        to: `${originalScale.x} ${originalScale.y} ${originalScale.z}`,
-                        dur: 200
-                    });
-                });
-            }
-        });
-
-        // Компонент для налагодження
-        AFRAME.registerComponent('debug-gps', {
-            init: function () {
-                var debugEl = document.getElementById('debug');
-                
-                setInterval(() => {
-                    if (navigator.geolocation) {
-                        navigator.geolocation.getCurrentPosition((position) => {
-                            debugEl.innerHTML = `
-                                <div>GPS: ${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}</div>
-                                <div>Точність: ±${position.coords.accuracy}м</div>
-                            `;
-                        });
-                    }
-                }, 2000);
-            }
-        });
-    </script>
-
-    <a-scene 
-        vr-mode-ui="enabled: false;" 
-        embedded 
-        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; trackingMethod: best;"
-        debug-gps>
+        let scene, camera, renderer, cube, sphere;
+        let isAnimating = true;
+        let isWireframe = false;
+        let mouseX = 0, mouseY = 0;
+        let targetRotationX = 0, targetRotationY = 0;
+        let currentRotationX = 0, currentRotationY = 0;
         
-        <!-- Ліва модель: Тор (на заході від користувача) -->
-        <a-torus 
-            gps-entity-place="latitude: 47.9083; longitude: 33.4110;" 
-            position="0 2 0"
-            color="#FF6B6B" 
-            radius="2" 
-            radius-tubular="0.5"
-            rotation-animation="speed: 1.5; axis: y"
-            float-animation
-            interactive
-            look-at="[gps-camera]"
-            scale="8 8 8">
+        function init() {
+            // Створення сцени
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0a0a);
             
-            <!-- Текст над об'єктом -->
-            <a-text 
-                value="ЛІВА МОДЕЛЬ\nЗАХІД" 
-                position="0 4 0" 
-                align="center" 
-                color="#FFFFFF"
-                scale="2 2 2"
-                look-at="[gps-camera]">
-            </a-text>
-        </a-torus>
-
-        <!-- Права модель: Додекаедр (на сході від користувача) -->
-        <a-dodecahedron 
-            gps-entity-place="latitude: 47.9084; longitude: 33.4120;" 
-            position="0 3 0"
-            color="#4ECDC4" 
-            radius="2"
-            rotation-animation="speed: 0.8; axis: x"
-            float-animation
-            interactive
-            look-at="[gps-camera]"
-            scale="6 6 6">
+            // Налаштування камери
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 0, 8);
             
-            <!-- Текст над об'єктом -->
-            <a-text 
-                value="ПРАВА МОДЕЛЬ\nСХІД" 
-                position="0 5 0" 
-                align="center" 
-                color="#FFFFFF"
-                scale="2 2 2"
-                look-at="[gps-camera]">
-            </a-text>
-        </a-dodecahedron>
-
-        <!-- Північна модель: Куб -->
-        <a-box 
-            gps-entity-place="latitude: 47.9090; longitude: 33.4115;" 
-            position="0 1.5 0"
-            color="#96CEB4" 
-            width="3" 
-            height="3" 
-            depth="3"
-            rotation-animation="speed: 1.2; axis: z"
-            interactive
-            look-at="[gps-camera]"
-            scale="4 4 4">
+            // Створення рендерера
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('container').appendChild(renderer.domElement);
             
-            <a-text 
-                value="ПІВНІЧ" 
-                position="0 2.5 0" 
-                align="center" 
-                color="#FFFFFF"
-                scale="1.5 1.5 1.5"
-                look-at="[gps-camera]">
-            </a-text>
-        </a-box>
-
-        <!-- Південна модель: Сфера -->
-        <a-sphere 
-            gps-entity-place="latitude: 47.9076; longitude: 33.4115;" 
-            position="0 2.5 0"
-            color="#FFEAA7" 
-            radius="1.5"
-            rotation-animation="speed: 2; axis: y"
-            float-animation
-            interactive
-            look-at="[gps-camera]"
-            scale="5 5 5">
+            // Освітлення
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+            scene.add(ambientLight);
             
-            <a-text 
-                value="ПІВДЕНЬ" 
-                position="0 2.5 0" 
-                align="center" 
-                color="#333333"
-                scale="1.5 1.5 1.5"
-                look-at="[gps-camera]">
-            </a-text>
-        </a-sphere>
-
-        <!-- Центральний маркер -->
-        <a-cylinder 
-            gps-entity-place="latitude: 47.9083; longitude: 33.4115;" 
-            position="0 0.5 0"
-            color="#DDA0DD" 
-            radius="1" 
-            height="1"
-            opacity="0.7"
-            scale="3 3 3">
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 10, 5);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight);
             
-            <a-text 
-                value="ВИ ТУТ" 
-                position="0 1 0" 
-                align="center" 
-                color="#FFFFFF"
-                scale="1.5 1.5 1.5"
-                look-at="[gps-camera]">
-            </a-text>
-        </a-cylinder>
-
-        <!-- Додаткові декоративні елементи -->
-        <a-icosahedron 
-            gps-entity-place="latitude: 47.9085; longitude: 33.4112;" 
-            position="0 4 0"
-            color="#FF69B4" 
-            radius="1"
-            rotation-animation="speed: 3; axis: x"
-            interactive
-            look-at="[gps-camera]"
-            scale="3 3 3"
-            opacity="0.8">
-        </a-icosahedron>
-
-        <a-octahedron 
-            gps-entity-place="latitude: 47.9081; longitude: 33.4118;" 
-            position="0 3.5 0"
-            color="#20B2AA" 
-            radius="1"
-            rotation-animation="speed: 2.5; axis: z"
-            interactive
-            look-at="[gps-camera]"
-            scale="2.5 2.5 2.5"
-            opacity="0.8">
-        </a-octahedron>
-
-        <!-- GPS-камера з курсором -->
-        <a-camera 
-            gps-camera 
-            rotation-reader
-            wasd-controls="enabled: false"
-            look-controls="enabled: true"
-            cursor="rayOrigin: mouse">
+            const pointLight = new THREE.PointLight(0x00ff88, 0.6, 100);
+            pointLight.position.set(-5, 5, 5);
+            scene.add(pointLight);
             
-            <a-cursor 
-                color="#FFFFFF"
-                opacity="0.8"
-                raycaster="objects: [gps-entity-place]">
-            </a-cursor>
-        </a-camera>
-    </a-scene>
+            // Створення лівої моделі (куб)
+            const cubeGeometry = new THREE.BoxGeometry(2, 2, 2);
+            const cubeMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x4488ff,
+                shininess: 100,
+                specular: 0x222222
+            });
+            cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+            cube.position.set(-4, 0, 0); // Ліворуч від центру
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            scene.add(cube);
+            
+            // Створення правої моделі (сфера)
+            const sphereGeometry = new THREE.SphereGeometry(1.5, 32, 32);
+            const sphereMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xff4444,
+                shininess: 100,
+                specular: 0x222222
+            });
+            sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+            sphere.position.set(4, 0, 0); // Праворуч від центру
+            sphere.castShadow = true;
+            sphere.receiveShadow = true;
+            scene.add(sphere);
+            
+            // Підлога для тіней
+            const floorGeometry = new THREE.PlaneGeometry(20, 20);
+            const floorMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0x333333,
+                transparent: true,
+                opacity: 0.8
+            });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = -3;
+            floor.receiveShadow = true;
+            scene.add(floor);
+            
+            // Обробники подій
+            document.addEventListener('mousemove', onMouseMove, false);
+            window.addEventListener('resize', onWindowResize, false);
+            
+            animate();
+        }
+        
+        function onMouseMove(event) {
+            mouseX = (event.clientX - window.innerWidth / 2) / 100;
+            mouseY = (event.clientY - window.innerHeight / 2) / 100;
+            
+            targetRotationY = mouseX * 0.05;
+            targetRotationX = mouseY * 0.05;
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (isAnimating) {
+                // Анімація моделей
+                cube.rotation.x += 0.01;
+                cube.rotation.y += 0.01;
+                
+                sphere.rotation.x += 0.005;
+                sphere.rotation.z += 0.01;
+                
+                // Плавний рух моделей
+                cube.position.y = Math.sin(Date.now() * 0.001) * 0.5;
+                sphere.position.y = Math.cos(Date.now() * 0.0015) * 0.3;
+            }
+            
+            // Плавне обертання камери за мишею
+            currentRotationX += (targetRotationX - currentRotationX) * 0.05;
+            currentRotationY += (targetRotationY - currentRotationY) * 0.05;
+            
+            camera.position.x = Math.sin(currentRotationY) * 8;
+            camera.position.z = Math.cos(currentRotationY) * 8;
+            camera.position.y = currentRotationX * 5;
+            
+            camera.lookAt(0, 0, 0);
+            
+            renderer.render(scene, camera);
+        }
+        
+        function resetCamera() {
+            targetRotationX = 0;
+            targetRotationY = 0;
+            currentRotationX = 0;
+            currentRotationY = 0;
+            camera.position.set(0, 0, 8);
+            camera.lookAt(0, 0, 0);
+        }
+        
+        function toggleAnimation() {
+            isAnimating = !isAnimating;
+        }
+        
+        function toggleWireframe() {
+            isWireframe = !isWireframe;
+            cube.material.wireframe = isWireframe;
+            sphere.material.wireframe = isWireframe;
+        }
+        
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        // Ініціалізація сцени
+        init();
+    </script>
 </body>
 </html>
