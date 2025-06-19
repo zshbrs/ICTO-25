@@ -1,230 +1,33 @@
 <!DOCTYPE html>
-<html lang="uk">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Сцена з двома моделями</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(135deg, #1e3c72, #2a5298);
-            font-family: Arial, sans-serif;
-            overflow: hidden;
-        }
-        
-        #container {
-            width: 100vw;
-            height: 100vh;
-            position: relative;
-        }
-        
-        #info {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            color: white;
-            background: rgba(0,0,0,0.7);
-            padding: 15px;
-            border-radius: 10px;
-            z-index: 100;
-            backdrop-filter: blur(10px);
-        }
-        
-        #controls {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            color: white;
-            background: rgba(0,0,0,0.7);
-            padding: 15px;
-            border-radius: 10px;
-            z-index: 100;
-            backdrop-filter: blur(10px);
-        }
-        
-        button {
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            margin: 2px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        
-        button:hover {
-            background: #45a049;
-        }
-    </style>
+		<meta charset="utf-8">
+		<style>
+			html, body { 
+				margin: 0; 
+				width: 100%;
+				height: 100%;
+				overflow: hidden;
+				position: relative;
+			}
+		</style>
+		<script type="importmap">
+		  {
+		    "imports": {
+		      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+		      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+		      "mindar":"https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-face-three.prod.js",
+		      "gps": "ar-threex-location-only.js"
+		    }
+		  }
+		</script>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="ar-threex-location-only.js"></script>		
+
+		<script src="homework12.js"></script>
 </head>
 <body>
-    <div id="container"></div>
-    
-    <div id="info">
-        <h3>3D Сцена</h3>
-        <p>Ліва модель: Куб (синій)</p>
-        <p>Права модель: Сфера (червона)</p>
-        <p>Використовуйте мишу для обертання камери</p>
-    </div>
-    
-    <div id="controls">
-        <button onclick="resetCamera()">Скинути камеру</button>
-        <button onclick="toggleAnimation()">Анімація</button>
-        <button onclick="toggleWireframe()">Каркас</button>
-    </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script>
-        let scene, camera, renderer, cube, sphere;
-        let isAnimating = true;
-        let isWireframe = false;
-        let mouseX = 0, mouseY = 0;
-        let targetRotationX = 0, targetRotationY = 0;
-        let currentRotationX = 0, currentRotationY = 0;
-        
-        function init() {
-            // Створення сцени
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x0a0a0a);
-            
-            // Налаштування камери
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 0, 8);
-            
-            // Створення рендерера
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            document.getElementById('container').appendChild(renderer.domElement);
-            
-            // Освітлення
-            const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
-            scene.add(ambientLight);
-            
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            directionalLight.position.set(10, 10, 5);
-            directionalLight.castShadow = true;
-            directionalLight.shadow.mapSize.width = 2048;
-            directionalLight.shadow.mapSize.height = 2048;
-            scene.add(directionalLight);
-            
-            const pointLight = new THREE.PointLight(0x00ff88, 0.6, 100);
-            pointLight.position.set(-5, 5, 5);
-            scene.add(pointLight);
-            
-            // Створення лівої моделі (куб)
-            const cubeGeometry = new THREE.BoxGeometry(2, 2, 2);
-            const cubeMaterial = new THREE.MeshPhongMaterial({ 
-                color: 0x4488ff,
-                shininess: 100,
-                specular: 0x222222
-            });
-            cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-            cube.position.set(-4, 0, 0); // Ліворуч від центру
-            cube.castShadow = true;
-            cube.receiveShadow = true;
-            scene.add(cube);
-            
-            // Створення правої моделі (сфера)
-            const sphereGeometry = new THREE.SphereGeometry(1.5, 32, 32);
-            const sphereMaterial = new THREE.MeshPhongMaterial({ 
-                color: 0xff4444,
-                shininess: 100,
-                specular: 0x222222
-            });
-            sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            sphere.position.set(4, 0, 0); // Праворуч від центру
-            sphere.castShadow = true;
-            sphere.receiveShadow = true;
-            scene.add(sphere);
-            
-            // Підлога для тіней
-            const floorGeometry = new THREE.PlaneGeometry(20, 20);
-            const floorMaterial = new THREE.MeshLambertMaterial({ 
-                color: 0x333333,
-                transparent: true,
-                opacity: 0.8
-            });
-            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-            floor.rotation.x = -Math.PI / 2;
-            floor.position.y = -3;
-            floor.receiveShadow = true;
-            scene.add(floor);
-            
-            // Обробники подій
-            document.addEventListener('mousemove', onMouseMove, false);
-            window.addEventListener('resize', onWindowResize, false);
-            
-            animate();
-        }
-        
-        function onMouseMove(event) {
-            mouseX = (event.clientX - window.innerWidth / 2) / 100;
-            mouseY = (event.clientY - window.innerHeight / 2) / 100;
-            
-            targetRotationY = mouseX * 0.05;
-            targetRotationX = mouseY * 0.05;
-        }
-        
-        function animate() {
-            requestAnimationFrame(animate);
-            
-            if (isAnimating) {
-                // Анімація моделей
-                cube.rotation.x += 0.01;
-                cube.rotation.y += 0.01;
-                
-                sphere.rotation.x += 0.005;
-                sphere.rotation.z += 0.01;
-                
-                // Плавний рух моделей
-                cube.position.y = Math.sin(Date.now() * 0.001) * 0.5;
-                sphere.position.y = Math.cos(Date.now() * 0.0015) * 0.3;
-            }
-            
-            // Плавне обертання камери за мишею
-            currentRotationX += (targetRotationX - currentRotationX) * 0.05;
-            currentRotationY += (targetRotationY - currentRotationY) * 0.05;
-            
-            camera.position.x = Math.sin(currentRotationY) * 8;
-            camera.position.z = Math.cos(currentRotationY) * 8;
-            camera.position.y = currentRotationX * 5;
-            
-            camera.lookAt(0, 0, 0);
-            
-            renderer.render(scene, camera);
-        }
-        
-        function resetCamera() {
-            targetRotationX = 0;
-            targetRotationY = 0;
-            currentRotationX = 0;
-            currentRotationY = 0;
-            camera.position.set(0, 0, 8);
-            camera.lookAt(0, 0, 0);
-        }
-        
-        function toggleAnimation() {
-            isAnimating = !isAnimating;
-        }
-        
-        function toggleWireframe() {
-            isWireframe = !isWireframe;
-            cube.material.wireframe = isWireframe;
-            sphere.material.wireframe = isWireframe;
-        }
-        
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-        
-        // Ініціалізація сцени
-        init();
-    </script>
+	<video id="video1" autoplay playsinline style="display: none;"></video>
 </body>
 </html>
