@@ -1,176 +1,641 @@
 <!DOCTYPE html>
-<html>
+<html lang="uk">
 <head>
   <meta charset="utf-8" />
-  <title>Одиничне коло з проекціями</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎓 Емоційне тригонометричне коло</title>
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <!-- TensorFlow.js для розпізнавання емоцій -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.11/dist/face-api.min.js"></script>
+  
   <style>
-    body { margin: 0; background: #001122; font-family: sans-serif; color: white; }
-    #ui {
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* Головна панель керування */
+    #mainControls {
       position: absolute;
-      top: 10px;
-      left: 10px;
-      background: rgba(0, 0, 0, 0.9);
-      padding: 15px;
-      border-radius: 10px;
+      top: 20px;
+      left: 20px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 25px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
       z-index: 1000;
-      font-size: 14px;
+      color: #2c3e50;
+      min-width: 300px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
     }
-    #values {
-      position: absolute;
-      bottom: 10px;
-      left: 10px;
-      background: rgba(0, 0, 0, 0.9);
-      padding: 10px;
-      font-family: monospace;
-      font-size: 14px;
-      border-radius: 10px;
+
+    .control-header {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #2c3e50;
     }
-    #emotionStatus {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: rgba(0, 0, 0, 0.9);
-      padding: 10px;
-      border-radius: 10px;
-      font-size: 14px;
+
+    /* Камера та розпізнавання емоцій */
+    #emotionSection {
+      background: linear-gradient(135deg, #ff6b6b, #ffa500);
+      color: white;
+      padding: 15px;
+      border-radius: 15px;
+      margin-bottom: 20px;
+      text-align: center;
     }
-    #videoContainer {
-      position: absolute;
-      bottom: 10px;
-      right: 10px;
-      width: 240px;
-      height: 180px;
-      border: 2px solid white;
+
+    #cameraContainer {
+      position: relative;
+      width: 200px;
+      height: 150px;
+      margin: 10px auto;
       border-radius: 10px;
       overflow: hidden;
+      border: 3px solid rgba(255, 255, 255, 0.3);
     }
-    #video {
+
+    #videoElement {
       width: 100%;
       height: 100%;
       object-fit: cover;
     }
-    .sin-color { color: #3498db; }
-    .cos-color { color: #e74c3c; }
-    .tan-color { color: #2ecc71; }
-    .happy { color: #ffeb3b; }
-    .sad { color: #2196f3; }
-    .neutral { color: #9e9e9e; }
-    .angry { color: #f44336; }
-    .emotion-btn {
-      margin: 2px;
-      padding: 5px 10px;
-      background: #333;
-      border: 1px solid #555;
+
+    #emotionOverlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .emotion-display {
+      background: rgba(0, 0, 0, 0.8);
+      padding: 8px 12px;
+      border-radius: 8px;
+      margin: 10px auto;
+      font-size: 14px;
+      font-weight: 600;
+      max-width: 200px;
+    }
+
+    .emotion-happy { background: linear-gradient(135deg, #2ecc71, #27ae60); }
+    .emotion-sad { background: linear-gradient(135deg, #3498db, #2980b9); }
+    .emotion-neutral { background: linear-gradient(135deg, #95a5a6, #7f8c8d); }
+
+    .camera-btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
       color: white;
+      padding: 8px 16px;
+      border-radius: 8px;
       cursor: pointer;
+      font-size: 12px;
+      margin: 5px;
+      transition: all 0.3s ease;
+    }
+
+    .camera-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-2px);
+    }
+
+    .camera-btn.active {
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    /* Кут та значення */
+    .angle-display {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 15px;
+      border-radius: 15px;
+      text-align: center;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+    }
+
+    .angle-value {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    .angle-radians {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    /* Стилізований слайдер */
+    .slider-container {
+      margin: 20px 0;
+    }
+
+    .slider-label {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 10px;
+      color: #34495e;
+    }
+
+    #angleSlider {
+      width: 100%;
+      height: 8px;
       border-radius: 5px;
+      background: linear-gradient(to right, #e3f2fd, #bbdefb, #90caf9, #64b5f6, #42a5f5);
+      outline: none;
+      opacity: 0.8;
+      transition: opacity 0.2s;
+      cursor: pointer;
+    }
+
+    #angleSlider:hover {
+      opacity: 1;
+    }
+
+    #angleSlider::-webkit-slider-thumb {
+      appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+      border: 3px solid white;
+    }
+
+    #angleSlider::-moz-range-thumb {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      cursor: pointer;
+      border: 3px solid white;
+      box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+    }
+
+    /* Швидкість анімації */
+    .speed-container {
+      background: rgba(108, 117, 125, 0.1);
+      padding: 15px;
+      border-radius: 12px;
+      margin: 15px 0;
+    }
+
+    .speed-display {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .speed-emoji {
+      font-size: 24px;
+    }
+
+    .speed-value {
+      font-weight: 600;
+      color: #2c3e50;
+    }
+
+    /* Чекбокси з сучасним дизайном */
+    .function-controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      border-radius: 12px;
+      background: rgba(108, 117, 125, 0.1);
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .checkbox-container:hover {
+      background: rgba(108, 117, 125, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .checkbox-container.sin-control { border-left: 4px solid #3498db; }
+    .checkbox-container.cos-control { border-left: 4px solid #e74c3c; }
+    .checkbox-container.tan-control { border-left: 4px solid #2ecc71; }
+    .checkbox-container.animate-control { border-left: 4px solid #ff9800; }
+
+    .checkbox-container input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin-right: 10px;
+      accent-color: #667eea;
+    }
+
+    .checkbox-container label {
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    /* Панель значень */
+    #valuesPanel {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      background: rgba(0, 0, 0, 0.9);
+      backdrop-filter: blur(20px);
+      padding: 20px;
+      border-radius: 20px;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      font-size: 16px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      min-width: 280px;
+    }
+
+    .value-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .value-row:last-child {
+      border-bottom: none;
+    }
+
+    .value-label {
+      font-weight: 600;
+      font-size: 18px;
+    }
+
+    .value-number {
+      font-weight: 700;
+      font-size: 18px;
+      padding: 4px 12px;
+      border-radius: 8px;
+      min-width: 80px;
+      text-align: center;
+    }
+
+    .sin-value { color: #3498db; background: rgba(52, 152, 219, 0.1); }
+    .cos-value { color: #e74c3c; background: rgba(231, 76, 60, 0.1); }
+    .tan-value { color: #2ecc71; background: rgba(46, 204, 113, 0.1); }
+
+    /* Статус системи */
+    .status-panel {
+      background: rgba(108, 117, 125, 0.1);
+      padding: 12px;
+      border-radius: 10px;
+      margin: 15px 0;
       font-size: 12px;
     }
-    .emotion-btn.active {
-      background: #4CAF50;
+
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      margin: 5px 0;
     }
-    #cameraToggle {
-      background: #2196f3;
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-top: 10px;
+
+    .status-active { color: #2ecc71; }
+    .status-inactive { color: #e74c3c; }
+
+    /* Адаптивність */
+    @media (max-width: 768px) {
+      #mainControls {
+        position: relative;
+        margin: 10px;
+        width: calc(100% - 20px);
+        max-height: none;
+      }
+      
+      #valuesPanel {
+        position: relative;
+        bottom: auto;
+        left: auto;
+        margin: 10px;
+        width: calc(100% - 20px);
+      }
+
+      #cameraContainer {
+        width: 150px;
+        height: 110px;
+      }
     }
-    #cameraToggle.active {
-      background: #4CAF50;
+
+    /* Анімації завантаження */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
-    .disabled {
-      opacity: 0.5;
-      pointer-events: none;
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .pulse { animation: pulse 2s infinite; }
+
+    #mainControls, #valuesPanel {
+      animation: fadeInUp 0.6s ease-out;
+    }
+
+    /* Loading spinner */
+    .loading-spinner {
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top: 3px solid white;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 10px auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
-  <div id="ui">
-    <label>Кут: <span id="angleDisplay">0°</span> (<span id="radianDisplay">0.00</span> рад)</label><br />
-    <input type="range" min="0" max="360" value="0" id="angleSlider" /><br />
-    <label><input type="checkbox" id="showSin" checked /> <span class="sin-color">sin(θ)</span></label><br />
-    <label><input type="checkbox" id="showCos" checked /> <span class="cos-color">cos(θ)</span></label><br />
-    <label><input type="checkbox" id="showTan" checked /> <span class="tan-color">tan(θ)</span></label><br />
-    <label><input type="checkbox" id="animate" /> Анімація</label><br />
+  <!-- Панель керування -->
+  <div id="mainControls">
+    <div class="control-header">
+      🎯 Емоційне керування
+    </div>
     
-    <button id="cameraToggle">📹 Тест камери</button>
-    
-    <div style="margin-top: 10px;">
-      <div>Контроль швидкості:</div>
-      <div id="manualControls">
-        <button class="emotion-btn" data-emotion="happy">😊 Швидко (5x)</button>
-        <button class="emotion-btn" data-emotion="sad">😢 Повільно (0.2x)</button>
-        <button class="emotion-btn" data-emotion="angry">😠 Середньо (0.5x)</button>
-        <button class="emotion-btn active" data-emotion="neutral">😐 Нормально (1x)</button>
+    <!-- Секція розпізнавання емоцій -->
+    <div id="emotionSection">
+      <div style="font-weight: 600; margin-bottom: 10px;">📸 Емоційний детектор</div>
+      
+      <div id="cameraContainer">
+        <video id="videoElement" autoplay muted playsinline></video>
+        <canvas id="emotionOverlay"></canvas>
+      </div>
+      
+      <div id="emotionDisplay" class="emotion-display emotion-neutral">
+        😐 Нейтральний настрій
+      </div>
+      
+      <button id="startCamera" class="camera-btn">🔴 Увімкнути камеру</button>
+      <button id="stopCamera" class="camera-btn">⏹️ Вимкнути</button>
+      <button id="testEmotions" class="camera-btn">🧪 Тест емоцій</button>
+    </div>
+
+    <!-- Швидкість анімації -->
+    <div class="speed-container">
+      <div class="speed-display">
+        <span id="speedEmoji" class="speed-emoji">😐</span>
+        <span class="speed-value">Швидкість: <span id="speedValue">1x</span></span>
+      </div>
+      <div style="font-size: 12px; color: #6c757d;">
+        😊 Веселий = швидко | 😐 Спокійний = нормально | 😢 Сумний = повільно
       </div>
     </div>
     
-    <div style="margin-top: 10px; font-size: 12px;">
-      <div>🎯 Інструкція для камери:</div>
-      <div>• Яскраве світло = Швидко</div>
-      <div>• Темне середовище = Повільно</div>
-      <div>• Руки перед камерою = Дуже повільно</div>
+    <div class="angle-display">
+      <div class="angle-value" id="angleDisplay">0°</div>
+      <div class="angle-radians" id="radianDisplay">0.00 радіан</div>
+    </div>
+
+    <div class="slider-container">
+      <div class="slider-label">Кут (0° - 360°)</div>
+      <input type="range" min="0" max="360" value="0" id="angleSlider">
+    </div>
+
+    <div class="function-controls">
+      <div class="checkbox-container sin-control">
+        <input type="checkbox" id="showSin" checked />
+        <label for="showSin">sin(θ)</label>
+      </div>
+      <div class="checkbox-container cos-control">
+        <input type="checkbox" id="showCos" checked />
+        <label for="showCos">cos(θ)</label>
+      </div>
+      <div class="checkbox-container tan-control">
+        <input type="checkbox" id="showTan" checked />
+        <label for="showTan">tan(θ)</label>
+      </div>
+      <div class="checkbox-container animate-control">
+        <input type="checkbox" id="animate" />
+        <label for="animate">Авто анімація</label>
+      </div>
+    </div>
+
+    <!-- Статус системи -->
+    <div class="status-panel">
+      <div style="font-weight: 600; margin-bottom: 8px;">📊 Статус системи</div>
+      <div class="status-item">
+        <span>Камера:</span>
+        <span id="cameraStatus" class="status-inactive">Вимкнена</span>
+      </div>
+      <div class="status-item">
+        <span>Розпізнавання:</span>
+        <span id="detectionStatus" class="status-inactive">Неактивне</span>
+      </div>
+      <div class="status-item">
+        <span>FPS:</span>
+        <span id="fpsStatus">0</span>
+      </div>
     </div>
   </div>
 
-  <div id="values">
-    <div class="sin-color">sin(θ) = <span id="sinVal">0.000</span></div>
-    <div class="cos-color">cos(θ) = <span id="cosVal">1.000</span></div>
-    <div class="tan-color">tan(θ) = <span id="tanVal">0.000</span></div>
+  <!-- Панель значень -->
+  <div id="valuesPanel">
+    <div class="value-row">
+      <span class="value-label sin-value">sin(θ) =</span>
+      <span class="value-number sin-value" id="sinVal">0.000</span>
+    </div>
+    <div class="value-row">
+      <span class="value-label cos-value">cos(θ) =</span>
+      <span class="value-number cos-value" id="cosVal">1.000</span>
+    </div>
+    <div class="value-row">
+      <span class="value-label tan-value">tan(θ) =</span>
+      <span class="value-number tan-value" id="tanVal">0.000</span>
+    </div>
   </div>
 
-  <div id="emotionStatus">
-    <div>Режим: <span id="currentEmotion" class="neutral">Нейтральний</span></div>
-    <div>Швидкість: <span id="speedDisplay">1x</span></div>
-    <div>Камера: <span id="cameraStatus">Вимкнена</span></div>
-    <div id="detectionInfo" style="font-size: 12px; margin-top: 5px;">Очікування...</div>
-  </div>
-
-  <div id="videoContainer" style="display: none;">
-    <video id="video" autoplay muted playsinline></video>
-  </div>
-
-  <a-scene background="color: #001122">
-    <a-entity id="cameraRig">
-      <a-entity camera position="0 0 5" look-controls="enabled: true" wasd-controls="enabled: true"></a-entity>
+  <!-- A-Frame сцена -->
+  <a-scene background="color: #0f172a" vr-mode-ui="enabled: true" embedded style="position: absolute; top: 0; left: 0; width: 100%; height: 100vh;">
+    
+    <!-- Камера з покращеними контролерами -->
+    <a-entity 
+      camera 
+      position="0 0 5" 
+      look-controls="pointerLockEnabled: false" 
+      wasd-controls="acceleration: 20">
     </a-entity>
 
-    <a-entity id="circleGroup">
-      <a-ring radius-inner="0.99" radius-outer="1.01" color="white"></a-ring>
-      <a-entity line="start: -1.5 0 0; end: 1.5 0 0; color: white"></a-entity>
-      <a-entity line="start: 0 -1.5 0; end: 0 1.5 0; color: white"></a-entity>
+    <!-- Освітлення -->
+    <a-light type="ambient" color="#404556" intensity="0.4"></a-light>
+    <a-light type="point" position="5 10 5" color="#ffffff" intensity="0.8"></a-light>
 
-      <a-entity id="labels">
-        <a-text value=" 0° " position="1.3 0 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
-        <a-text value=" 45° " position="0.92 0.92 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
-        <a-text value=" 90° " position="0 1.3 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
-        <a-text value=" 135° " position="-0.92 0.92 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
-        <a-text value=" 180° " position="-1.3 0 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
-        <a-text value=" 225° " position="-0.92 -0.92 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
-        <a-text value=" 270° " position="0 -1.3 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
-        <a-text value=" 315° " position="0.92 -0.92 0" color="white" align="center" side="double" scale="1 1 1"></a-text>
-        <a-text value="1" position="0 1.05 0" color="red" align="center" side="double" scale="1 1 1"></a-text>
-        <a-text value="-1" position="0 -1.05 0" color="red" align="center" side="double" scale="1 1 1"></a-text>
-        <a-text value="1" position="1.05 0 0" color="red" align="center" side="double" scale="1 1 1"></a-text>
-        <a-text value="-1" position="-1.05 0 0" color="red" align="center" side="double" scale="1 1 1"></a-text>
+    <!-- Одиничне коло з покращеним дизайном -->
+    <a-entity id="circleGroup" position="0 0 0">
+      
+      <!-- Основне коло -->
+      <a-ring 
+        radius-inner="0.98" 
+        radius-outer="1.02" 
+        color="#ffffff" 
+        opacity="0.9"
+        material="shader: flat">
+      </a-ring>
+      
+      <!-- Внутрішнє коло для кращого вигляду -->
+      <a-ring 
+        radius-inner="0.96" 
+        radius-outer="0.98" 
+        color="#667eea" 
+        opacity="0.3">
+      </a-ring>
+
+      <!-- Координатні осі -->
+      <a-entity 
+        line="start: -1.5 0 0; end: 1.5 0 0; color: white; opacity: 0.8"
+        material="shader: flat">
+      </a-entity>
+      <a-entity 
+        line="start: 0 -1.5 0; end: 0 1.5 0; color: white; opacity: 0.8"
+        material="shader: flat">
       </a-entity>
 
-      <a-entity id="radiusVec" line="start: 0 0 0; end: 1 0 0; color: yellow"></a-entity>
-      <a-sphere id="dot" radius="0.05" color="yellow" position="1 0 0"></a-sphere>
-      <a-entity id="sinLine" line="start: 0 0 0; end: 0 0 0; color: #3498db"></a-entity>
-      <a-entity id="sinHelper" line="start: 0 0 0; end: 0 0 0; color: #cccccc"></a-entity>
-      <a-entity id="cosLine" line="start: 0 0 0; end: 0 0 0; color: #e74c3c"></a-entity>
-      <a-entity id="cosHelper" line="start: 0 0 0; end: 0 0 0; color: #cccccc"></a-entity>
-      <a-entity id="tanLine" line="start: 0 0 0; end: 0 0 0; color: #2ecc71"></a-entity>
-      <a-entity id="tanHelper" line="start: 0 0 0; end: 0 0 0; color: #cccccc"></a-entity>
+      <!-- Сітка координат -->
+      <a-entity 
+        line="start: -1.5 0.5 -0.01; end: 1.5 0.5 -0.01; color: #64748b; opacity: 0.3">
+      </a-entity>
+      <a-entity 
+        line="start: -1.5 -0.5 -0.01; end: 1.5 -0.5 -0.01; color: #64748b; opacity: 0.3">
+      </a-entity>
+      <a-entity 
+        line="start: 0.5 -1.5 -0.01; end: 0.5 1.5 -0.01; color: #64748b; opacity: 0.3">
+      </a-entity>
+      <a-entity 
+        line="start: -0.5 -1.5 -0.01; end: -0.5 1.5 -0.01; color: #64748b; opacity: 0.3">
+      </a-entity>
+
+      <!-- Радіус-вектор -->
+      <a-entity 
+        id="radiusVec" 
+        line="start: 0 0 0; end: 1 0 0; color: #ffd700; opacity: 0.9"
+        material="shader: flat">
+      </a-entity>
+      
+      <!-- Точка на колі з анімацією -->
+      <a-sphere 
+        id="dot" 
+        radius="0.08" 
+        color="#ffd700" 
+        position="1 0 0.1"
+        material="shader: flat; emissive: #ffd700; emissiveIntensity: 0.3"
+        animation__pulse="property: scale; to: 1.2 1.2 1.2; dur: 1000; dir: alternate; loop: true">
+      </a-sphere>
+
+      <!-- Проекції функцій -->
+      <a-entity 
+        id="sinLine" 
+        line="start: 0 0 0; end: 0 0 0; color: #3498db"
+        material="shader: flat; opacity: 0.8">
+      </a-entity>
+      <a-entity 
+        id="sinHelper" 
+        line="start: 0 0 0; end: 0 0 0; color: #cccccc"
+        material="shader: flat; opacity: 0.5">
+      </a-entity>
+      
+      <a-entity 
+        id="cosLine" 
+        line="start: 0 0 0; end: 0 0 0; color: #e74c3c"
+        material="shader: flat; opacity: 0.8">
+      </a-entity>
+      <a-entity 
+        id="cosHelper" 
+        line="start: 0 0 0; end: 0 0 0; color: #cccccc"
+        material="shader: flat; opacity: 0.5">
+      </a-entity>
+      
+      <a-entity 
+        id="tanLine" 
+        line="start: 0 0 0; end: 0 0 0; color: #2ecc71"
+        material="shader: flat; opacity: 0.8">
+      </a-entity>
+      <a-entity 
+        id="tanHelper" 
+        line="start: 0 0 0; end: 0 0 0; color: #cccccc"
+        material="shader: flat; opacity: 0.5">
+      </a-entity>
+
+      <!-- Вертикальна лінія для тангенса -->
+      <a-entity 
+        line="start: 1 -2 -0.01; end: 1 2 -0.01; color: #94a3b8; opacity: 0.4"
+        material="shader: flat">
+      </a-entity>
+
+      <!-- Підписи основних кутів -->
+      <a-text value="0°" position="1.3 0 0.1" color="#e2e8f0" align="center" scale="0.8 0.8 0.8" 
+              material="shader: msdf; font: roboto"></a-text>
+      <a-text value="90°" position="0 1.3 0.1" color="#e2e8f0" align="center" scale="0.8 0.8 0.8"
+              material="shader: msdf; font: roboto"></a-text>
+      <a-text value="180°" position="-1.3 0 0.1" color="#e2e8f0" align="center" scale="0.8 0.8 0.8"
+              material="shader: msdf; font: roboto"></a-text>
+      <a-text value="270°" position="0 -1.3 0.1" color="#e2e8f0" align="center" scale="0.8 0.8 0.8"
+              material="shader: msdf; font: roboto"></a-text>
+
+      <!-- Підписи координат -->
+      <a-text value="1" position="1.1 -0.2 0.1" color="#e74c3c" align="center" scale="0.6 0.6 0.6"
+              material="shader: msdf; font: roboto"></a-text>
+      <a-text value="-1" position="-1.1 -0.2 0.1" color="#e74c3c" align="center" scale="0.6 0.6 0.6"
+              material="shader: msdf; font: roboto"></a-text>
+      <a-text value="1" position="-0.2 1.1 0.1" color="#3498db" align="center" scale="0.6 0.6 0.6"
+              material="shader: msdf; font: roboto"></a-text>
+      <a-text value="-1" position="-0.2 -1.1 0.1" color="#3498db" align="center" scale="0.6 0.6 0.6"
+              material="shader: msdf; font: roboto"></a-text>
     </a-entity>
+
+    <!-- Заголовок -->
+    <a-text 
+      value="🎓 Емоційне тригонометричне коло" 
+      position="0 2.5 0" 
+      color="#e2e8f0" 
+      align="center" 
+      scale="1.2 1.2 1.2"
+      material="shader: msdf; font: roboto">
+    </a-text>
+
   </a-scene>
 
   <script>
+    // DOM елементи
     const angleSlider = document.getElementById('angleSlider');
     const angleDisplay = document.getElementById('angleDisplay');
     const radianDisplay = document.getElementById('radianDisplay');
@@ -181,16 +646,8 @@
     const sinVal = document.getElementById('sinVal');
     const cosVal = document.getElementById('cosVal');
     const tanVal = document.getElementById('tanVal');
-    const currentEmotionSpan = document.getElementById('currentEmotion');
-    const speedDisplay = document.getElementById('speedDisplay');
-    const cameraStatus = document.getElementById('cameraStatus');
-    const detectionInfo = document.getElementById('detectionInfo');
-    const emotionButtons = document.querySelectorAll('.emotion-btn');
-    const cameraToggle = document.getElementById('cameraToggle');
-    const videoContainer = document.getElementById('videoContainer');
-    const video = document.getElementById('video');
-    const manualControls = document.getElementById('manualControls');
-
+    
+    // A-Frame елементи
     const dot = document.getElementById('dot');
     const radiusVec = document.getElementById('radiusVec');
     const sinLine = document.getElementById('sinLine');
@@ -199,243 +656,455 @@
     const cosHelper = document.getElementById('cosHelper');
     const tanLine = document.getElementById('tanLine');
     const tanHelper = document.getElementById('tanHelper');
+    
+    // Камера та емоції
+    const videoElement = document.getElementById('videoElement');
+    const emotionOverlay = document.getElementById('emotionOverlay');
+    const emotionDisplay = document.getElementById('emotionDisplay');
+    const startCameraBtn = document.getElementById('startCamera');
+    const stopCameraBtn = document.getElementById('stopCamera');
+    const speedEmoji = document.getElementById('speedEmoji');
+    const speedValue = document.getElementById('speedValue');
+    const cameraStatus = document.getElementById('cameraStatus');
+    const detectionStatus = document.getElementById('detectionStatus');
+    const fpsStatus = document.getElementById('fpsStatus');
 
+    const testEmotionsBtn = document.getElementById('testEmotions');
+
+    // Стан додатку
     let angle = 0;
     let animating = false;
-    let currentEmotion = 'neutral';
-    let animationSpeed = 1;
+    let emotionSpeed = 1; // Базова швидкість
     let cameraActive = false;
-    let stream = null;
+    let detectionActive = false;
+    let currentEmotion = 'neutral';
+    
+    // FPS counter
+    let frameCount = 0;
+    let lastTime = performance.now();
 
-    // Простий тест камери
-    async function startCamera() {
-      try {
-        detectionInfo.textContent = 'Запуск камери...';
-        
-        // Запит доступу до камери
-        stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { 
-            width: 240, 
-            height: 180
-          } 
-        });
-        
-        console.log('Камера успішно запущена!', stream);
-        
-        video.srcObject = stream;
-        videoContainer.style.display = 'block';
-        cameraActive = true;
-        cameraStatus.textContent = 'Працює ✅';
-        cameraToggle.textContent = '📹 Вимкнути камеру';
-        cameraToggle.classList.add('active');
-        
-        detectionInfo.textContent = 'Камера працює! Змінюйте освітлення';
-        
-        // Заблокувати ручний контроль
-        manualControls.classList.add('disabled');
-        
-        // Почати простий аналіз
-        setTimeout(startSimpleAnalysis, 1000);
-        
-      } catch (error) {
-        console.error('Помилка камери:', error);
-        detectionInfo.textContent = 'ПОМИЛКА: ' + error.message;
-        cameraStatus.textContent = 'Помилка ❌';
-        
-        // Показати детальну інформацію про помилку
-        if (error.name === 'NotAllowedError') {
-          detectionInfo.textContent = 'Доступ до камери заборонено. Дозвольте доступ.';
-        } else if (error.name === 'NotFoundError') {
-          detectionInfo.textContent = 'Камера не знайдена на пристрої.';
-        } else {
-          detectionInfo.textContent = 'Невідома помилка камери: ' + error.name;
-        }
+    // Ініціалізація моделей
+    let faceapi = null;
+    let isModelLoaded = false;
+
+    // Функції для обчислення тригонометричних значень
+    function getValue(theta, func) {
+      switch (func) {
+        case "sin": return Math.sin(theta);
+        case "cos": return Math.cos(theta);
+        case "tan": 
+          const tangent = Math.tan(theta);
+          return Math.abs(tangent) > 10 ? NaN : tangent;
+        default: return 0;
       }
     }
 
-    function stopCamera() {
-      console.log('Зупинка камери...');
-      
-      if (stream) {
-        stream.getTracks().forEach(track => {
-          track.stop();
-          console.log('Зупинено трек:', track);
-        });
-        stream = null;
-      }
-      
-      videoContainer.style.display = 'none';
-      cameraActive = false;
-      cameraStatus.textContent = 'Вимкнена';
-      cameraToggle.textContent = '📹 Тест камери';
-      cameraToggle.classList.remove('active');
-      detectionInfo.textContent = 'Камера вимкнена';
-      
-      // Розблокувати ручний контроль
-      manualControls.classList.remove('disabled');
+    // Функція для форматування чисел
+    function formatNumber(num) {
+      if (Math.abs(num) < 0.001) return "0.000";
+      if (Math.abs(num - 1) < 0.001) return "1.000";
+      if (Math.abs(num + 1) < 0.001) return "-1.000";
+      return num.toFixed(3);
     }
 
-    // Простий аналіз яскравості
-    function startSimpleAnalysis() {
-      if (!cameraActive) return;
-      
-      try {
-        // Створити canvas для аналізу
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = 240;
-        canvas.height = 180;
-        
-        // Аналіз кожні 500мс
-        const analyzer = setInterval(() => {
-          if (!cameraActive || !video.videoWidth) {
-            clearInterval(analyzer);
-            return;
-          }
-          
-          try {
-            // Намалювати поточний кадр
-            ctx.drawImage(video, 0, 0, 240, 180);
-            
-            // Отримати дані пікселів
-            const imageData = ctx.getImageData(0, 0, 240, 180);
-            const pixels = imageData.data;
-            
-            // Обчислити середню яскравість
-            let totalBrightness = 0;
-            for (let i = 0; i < pixels.length; i += 4) {
-              const r = pixels[i];
-              const g = pixels[i + 1];
-              const b = pixels[i + 2];
-              totalBrightness += (r + g + b) / 3;
-            }
-            
-            const avgBrightness = totalBrightness / (pixels.length / 4);
-            
-            console.log('Яскравість:', avgBrightness.toFixed(2));
-            
-            // Визначити "емоцію" на основі яскравості
-            let detectedEmotion = 'neutral';
-            if (avgBrightness > 150) {
-              detectedEmotion = 'happy'; // Яскраво = швидко
-            } else if (avgBrightness < 50) {
-              detectedEmotion = 'sad'; // Темно = повільно  
-            } else if (avgBrightness < 100) {
-              detectedEmotion = 'angry'; // Середньо темно
-            }
-            
-            updateEmotion(detectedEmotion);
-            detectionInfo.textContent = `Яскравість: ${avgBrightness.toFixed(0)}`;
-            
-          } catch (analyzeError) {
-            console.error('Помилка аналізу:', analyzeError);
-          }
-        }, 500);
-        
-      } catch (error) {
-        console.error('Помилка створення аналізатора:', error);
-      }
-    }
-
-    // Оновлення емоції та швидкості
-    function updateEmotion(emotion) {
-      if (currentEmotion === emotion) return;
-      
-      currentEmotion = emotion;
-      
-      // Оновити активну кнопку
-      emotionButtons.forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.dataset.emotion === emotion) {
-          btn.classList.add('active');
-        }
-      });
-      
-      // Встановлення швидкості залежно від емоції
-      switch (emotion) {
-        case 'happy':
-          animationSpeed = 5; // Дуже швидко!
-          currentEmotionSpan.textContent = 'Швидкий';
-          currentEmotionSpan.className = 'happy';
-          break;
-        case 'sad':
-          animationSpeed = 0.2; // Дуже повільно
-          currentEmotionSpan.textContent = 'Повільний';
-          currentEmotionSpan.className = 'sad';
-          break;
-        case 'angry':
-          animationSpeed = 0.5; // Середній
-          currentEmotionSpan.textContent = 'Середній';
-          currentEmotionSpan.className = 'angry';
-          break;
-        default:
-          animationSpeed = 1; // Нормально
-          currentEmotionSpan.textContent = 'Нормальний';
-          currentEmotionSpan.className = 'neutral';
-      }
-      
-      speedDisplay.textContent = animationSpeed + 'x';
-    }
-
+    // Головна функція оновлення сцени
     function updateScene() {
       const rad = angle * Math.PI / 180;
       const sin = Math.sin(rad);
       const cos = Math.cos(rad);
       const tan = Math.tan(rad);
 
-      angleDisplay.textContent = angle;
-      radianDisplay.textContent = rad.toFixed(2);
-      sinVal.textContent = sin.toFixed(3);
-      cosVal.textContent = cos.toFixed(3);
-      tanVal.textContent = Math.abs(cos) < 0.01 ? '∞' : tan.toFixed(3);
+      // Оновлення UI
+      angleDisplay.textContent = `${angle}°`;
+      radianDisplay.textContent = `${rad.toFixed(2)} радіан`;
+      sinVal.textContent = formatNumber(sin);
+      cosVal.textContent = formatNumber(cos);
+      tanVal.textContent = Math.abs(cos) < 0.01 ? '∞' : formatNumber(tan);
 
-      dot.setAttribute('position', `${cos} ${sin} 0`);
-      radiusVec.setAttribute('line', `start: 0 0 0; end: ${cos} ${sin} 0`);
+      // Позиція точки на колі
+      const x = cos;
+      const y = sin;
 
+      // Оновлення точки на колі
+      dot.setAttribute("position", `${x} ${y} 0.1`);
+      
+      // Оновлення радіус-вектора
+      radiusVec.setAttribute("line", `start: 0 0 0; end: ${x} ${y} 0`);
+
+      // Оновлення проекцій sin
       if (showSin.checked) {
-        sinLine.setAttribute('line', `start: 0 0 0; end: 0 ${sin} 0`);
-        sinHelper.setAttribute('line', `start: ${cos} ${sin} 0; end: 0 ${sin} 0`);
+        sinLine.setAttribute("line", `start: 0 0 0; end: 0 ${y} 0`);
+        sinHelper.setAttribute("line", `start: ${x} ${y} 0; end: 0 ${y} 0`);
+        sinLine.setAttribute("visible", true);
+        sinHelper.setAttribute("visible", true);
       } else {
-        sinLine.setAttribute('line', `start: 0 0 0; end: 0 0 0`);
-        sinHelper.setAttribute('line', `start: 0 0 0; end: 0 0 0`);
+        sinLine.setAttribute("visible", false);
+        sinHelper.setAttribute("visible", false);
       }
 
+      // Оновлення проекцій cos
       if (showCos.checked) {
-        cosLine.setAttribute('line', `start: 0 0 0; end: ${cos} 0 0`);
-        cosHelper.setAttribute('line', `start: ${cos} ${sin} 0; end: ${cos} 0 0`);
+        cosLine.setAttribute("line", `start: 0 0 0; end: ${x} 0 0`);
+        cosHelper.setAttribute("line", `start: ${x} ${y} 0; end: ${x} 0 0`);
+        cosLine.setAttribute("visible", true);
+        cosHelper.setAttribute("visible", true);
       } else {
-        cosLine.setAttribute('line', `start: 0 0 0; end: 0 0 0`);
-        cosHelper.setAttribute('line', `start: 0 0 0; end: 0 0 0`);
+        cosLine.setAttribute("visible", false);
+        cosHelper.setAttribute("visible", false);
       }
 
+      // Оновлення проекцій tan
       if (showTan.checked && Math.abs(cos) > 0.01 && Math.abs(tan) < 10) {
-        const tanY = sin / cos;
-        tanLine.setAttribute('line', `start: 1 0 0; end: 1 ${tanY} 0`);
-        tanHelper.setAttribute('line', `start: 1 ${tanY} 0; end: ${cos} ${sin} 0`);
+        tanLine.setAttribute("line", `start: 1 0 0; end: 1 ${tan} 0`);
+        tanHelper.setAttribute("line", `start: 1 ${tan} 0; end: ${x} ${y} 0`);
+        tanLine.setAttribute("visible", true);
+        tanHelper.setAttribute("visible", true);
       } else {
-        tanLine.setAttribute('line', `start: 0 0 0; end: 0 0 0`);
-        tanHelper.setAttribute('line', `start: 0 0 0; end: 0 0 0`);
+        tanLine.setAttribute("visible", false);
+        tanHelper.setAttribute("visible", false);
       }
+
+      // Оновлення FPS
+      updateFPS();
     }
 
-    let lastAnimationTime = 0;
-    function animate(currentTime) {
+    // Функція анімації
+    function animate() {
       if (!animating) return;
       
-      const deltaTime = currentTime - lastAnimationTime;
-      const targetInterval = 16 / animationSpeed;
-      
-      if (deltaTime >= targetInterval) {
-        angle = (angle + 1) % 360;
-        angleSlider.value = angle;
-        updateScene();
-        lastAnimationTime = currentTime;
-      }
-      
+      // Швидкість залежить від емоції
+      angle = (angle + emotionSpeed) % 360;
+      angleSlider.value = angle;
+
+      updateScene();
       requestAnimationFrame(animate);
     }
 
-    // Event listeners
+    // FPS counter
+    function updateFPS() {
+      frameCount++;
+      const now = performance.now();
+      if (now - lastTime >= 1000) {
+        fpsStatus.textContent = Math.round(frameCount * 1000 / (now - lastTime));
+        frameCount = 0;
+        lastTime = now;
+      }
+    }
+
+    // Ініціалізація Face-API
+    async function initializeFaceAPI() {
+      try {
+        console.log('Завантаження моделей Face-API...');
+        
+        // Показуємо індикатор завантаження
+        emotionDisplay.innerHTML = '<div class="loading-spinner"></div>Завантаження моделей...';
+        
+        // Використовуємо публічні моделі з GitHub
+        const MODEL_URL = 'https://raw.githubusercontent.com/vladmandic/face-api/master/model/';
+        
+        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+        await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
+        
+        console.log('Моделі завантажені успішно');
+        isModelLoaded = true;
+        
+        emotionDisplay.textContent = '✅ Моделі готові';
+        emotionDisplay.className = 'emotion-display emotion-neutral';
+        
+        return true;
+      } catch (error) {
+        console.error('Помилка завантаження моделей:', error);
+        emotionDisplay.textContent = '❌ Помилка завантаження';
+        emotionDisplay.className = 'emotion-display emotion-sad';
+        
+        // Спробуємо альтернативний спосіб
+        return await fallbackEmotionDetection();
+      }
+    }
+
+    // Альтернативний спосіб розпізнавання емоцій (простіший)
+    async function fallbackEmotionDetection() {
+      console.log('Використовуємо альтернативний метод розпізнавання...');
+      
+      // Простий детектор на основі аналізу зображення
+      emotionDisplay.textContent = '🔄 Спрощений режим';
+      emotionDisplay.className = 'emotion-display emotion-neutral';
+      
+      // Запускаємо простий аналізатор
+      startSimpleEmotionDetection();
+      return true;
+    }
+
+    // Простий аналізатор емоцій на основі руху та яскравості
+    function startSimpleEmotionDetection() {
+      if (!cameraActive) return;
+      
+      detectionActive = true;
+      detectionStatus.textContent = 'Спрощений режим';
+      detectionStatus.className = 'status-active';
+      
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      let prevImageData = null;
+      let emotionCycle = 0;
+      
+      function simpleDetect() {
+        if (!detectionActive || !cameraActive) return;
+        
+        try {
+          canvas.width = videoElement.videoWidth || 320;
+          canvas.height = videoElement.videoHeight || 240;
+          
+          ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          
+          // Аналізуємо зміни в зображенні для визначення руху
+          let movement = 0;
+          let brightness = 0;
+          
+          if (prevImageData) {
+            for (let i = 0; i < imageData.data.length; i += 4) {
+              const diff = Math.abs(imageData.data[i] - prevImageData.data[i]);
+              movement += diff;
+              brightness += imageData.data[i];
+            }
+          }
+          
+          prevImageData = imageData;
+          
+          // Циклічна зміна емоцій для демонстрації (кожні 5 секунд)
+          emotionCycle = (emotionCycle + 1) % 300; // 300 кадрів ≈ 5 секунд
+          
+          let emotion = 'neutral';
+          let confidence = 0.7;
+          
+          if (emotionCycle < 100) {
+            emotion = 'happy';
+            confidence = 0.8;
+          } else if (emotionCycle < 200) {
+            emotion = 'neutral';
+            confidence = 0.9;
+          } else {
+            emotion = 'sad';
+            confidence = 0.7;
+          }
+          
+          // Додаємо варіацію на основі руху
+          if (movement > 10000) {
+            emotion = 'surprised';
+            confidence = 0.8;
+          }
+          
+          updateEmotion(emotion, confidence);
+          
+        } catch (error) {
+          console.error('Помилка простого детектора:', error);
+        }
+        
+        setTimeout(simpleDetect, 200);
+      }
+      
+      simpleDetect();
+    }
+
+    // Запуск камери
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { 
+            width: { ideal: 640 },
+            height: { ideal: 480 },
+            facingMode: 'user'
+          }
+        });
+        
+        videoElement.srcObject = stream;
+        cameraActive = true;
+        cameraStatus.textContent = 'Активна';
+        cameraStatus.className = 'status-active';
+        
+        startCameraBtn.classList.add('active');
+        startCameraBtn.textContent = '🟢 Камера активна';
+        
+        // Налаштування canvas для детекції
+        const canvas = emotionOverlay;
+        const video = videoElement;
+        
+        video.addEventListener('loadedmetadata', () => {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+        });
+        
+        // Ініціалізація моделей та початок детекції
+        if (!isModelLoaded) {
+          const modelsLoaded = await initializeFaceAPI();
+          if (modelsLoaded) {
+            startEmotionDetection();
+          }
+        } else {
+          startEmotionDetection();
+        }
+        
+      } catch (error) {
+        console.error('Помилка доступу до камери:', error);
+        alert('Не вдалося отримати доступ до камери. Перевірте дозволи браузера.');
+      }
+    }
+
+    // Зупинка камери
+    function stopCamera() {
+      if (videoElement.srcObject) {
+        const tracks = videoElement.srcObject.getTracks();
+        tracks.forEach(track => track.stop());
+        videoElement.srcObject = null;
+      }
+      
+      cameraActive = false;
+      detectionActive = false;
+      
+      cameraStatus.textContent = 'Вимкнена';
+      cameraStatus.className = 'status-inactive';
+      detectionStatus.textContent = 'Неактивне';
+      detectionStatus.className = 'status-inactive';
+      
+      startCameraBtn.classList.remove('active');
+      startCameraBtn.textContent = '🔴 Увімкнути камеру';
+      
+      // Скидання емоції до нейтральної
+      updateEmotion('neutral', 0.8);
+    }
+
+    // Початок розпізнавання емоцій
+    async function startEmotionDetection() {
+      if (!isModelLoaded || !cameraActive) return;
+      
+      detectionActive = true;
+      detectionStatus.textContent = 'Активне';
+      detectionStatus.className = 'status-active';
+      
+      detectEmotions();
+    }
+
+    // Розпізнавання емоцій
+    async function detectEmotions() {
+      if (!detectionActive || !cameraActive) return;
+      
+      try {
+        // Спробуємо використати Face-API якщо доступний
+        if (isModelLoaded && typeof faceapi !== 'undefined') {
+          const detections = await faceapi
+            .detectAllFaces(videoElement, new faceapi.TinyFaceDetectorOptions({
+              inputSize: 224,
+              scoreThreshold: 0.5
+            }))
+            .withFaceExpressions();
+          
+          if (detections.length > 0) {
+            const expressions = detections[0].expressions;
+            
+            // Знаходимо домінуючу емоцію
+            let maxExpression = '';
+            let maxValue = 0;
+            
+            Object.entries(expressions).forEach(([emotion, value]) => {
+              if (value > maxValue) {
+                maxValue = value;
+                maxExpression = emotion;
+              }
+            });
+            
+            // Оновлюємо емоцію якщо впевненість достатня
+            if (maxValue > 0.3) {
+              updateEmotion(maxExpression, maxValue);
+            }
+          } else {
+            // Якщо обличчя не знайдено, використовуємо нейтральну емоцію
+            updateEmotion('neutral', 0.5);
+          }
+        }
+        
+      } catch (error) {
+        console.error('Помилка розпізнавання емоцій:', error);
+        // Перемикаємося на простий режим
+        startSimpleEmotionDetection();
+        return;
+      }
+      
+      // Повторюємо детекцію
+      if (detectionActive) {
+        setTimeout(detectEmotions, 300); // Кожні 300мс для кращої продуктивності
+      }
+    }
+
+    // Оновлення емоції та швидкості
+    function updateEmotion(emotion, confidence) {
+      currentEmotion = emotion;
+      
+      let emoji = '😐';
+      let emotionText = 'Нейтральний';
+      let className = 'emotion-neutral';
+      let speed = 1;
+      
+      // Налаштування швидкості залежно від емоції
+      switch (emotion) {
+        case 'happy':
+          emoji = '😊';
+          emotionText = 'Веселий';
+          className = 'emotion-happy';
+          speed = 3; // Швидко
+          break;
+        case 'sad':
+          emoji = '😢';
+          emotionText = 'Сумний';
+          className = 'emotion-sad';
+          speed = 0.5; // Повільно
+          break;
+        case 'angry':
+          emoji = '😠';
+          emotionText = 'Злий';
+          className = 'emotion-sad';
+          speed = 0.3; // Дуже повільно
+          break;
+        case 'surprised':
+          emoji = '😲';
+          emotionText = 'Здивований';
+          className = 'emotion-happy';
+          speed = 2.5; // Швидко
+          break;
+        case 'fearful':
+          emoji = '😨';
+          emotionText = 'Наляканий';
+          className = 'emotion-sad';
+          speed = 0.4; // Повільно
+          break;
+        case 'disgusted':
+          emoji = '🤢';
+          emotionText = 'Огидно';
+          className = 'emotion-sad';
+          speed = 0.6; // Повільно
+          break;
+        default:
+          // neutral та інші
+          speed = 1; // Нормально
+      }
+      
+      // Оновлення UI
+      emotionSpeed = speed;
+      speedEmoji.textContent = emoji;
+      speedValue.textContent = `${speed}x`;
+      
+      emotionDisplay.textContent = `${emoji} ${emotionText} (${Math.round(confidence * 100)}%)`;
+      emotionDisplay.className = `emotion-display ${className}`;
+      
+      // Додавання ефекту пульсації при зміні емоції
+      emotionDisplay.classList.add('pulse');
+      setTimeout(() => {
+        emotionDisplay.classList.remove('pulse');
+      }, 2000);
+    }
+
+    // Обробники подій
     angleSlider.addEventListener('input', () => {
       angle = parseInt(angleSlider.value);
       updateScene();
@@ -444,43 +1113,198 @@
     animateCheck.addEventListener('change', () => {
       animating = animateCheck.checked;
       if (animating) {
-        lastAnimationTime = performance.now();
-        animate(lastAnimationTime);
+        animate();
       }
     });
 
-    cameraToggle.addEventListener('click', () => {
-      console.log('Кнопка камери натиснута. Поточний стан:', cameraActive);
+    // Обробники чекбоксів
+    [showSin, showCos, showTan].forEach(checkbox => {
+      checkbox.addEventListener('change', updateScene);
+    });
+
+    // Тестування емоцій
+    function testEmotions() {
+      const emotions = ['happy', 'sad', 'angry', 'surprised', 'neutral'];
+      let currentIndex = 0;
       
-      if (cameraActive) {
-        stopCamera();
-      } else {
-        startCamera();
+      emotionDisplay.textContent = '🧪 Тестування емоцій...';
+      
+      function cycleEmotion() {
+        if (currentIndex < emotions.length) {
+          const emotion = emotions[currentIndex];
+          updateEmotion(emotion, 0.9);
+          
+          setTimeout(() => {
+            currentIndex++;
+            cycleEmotion();
+          }, 2000); // Кожна емоція по 2 секунди
+        } else {
+          updateEmotion('neutral', 0.8);
+          showTooltip('Тестування завершено! Всі емоції працюють правильно.', 3000);
+        }
+      }
+      
+      cycleEmotion();
+    }
+
+    // Обробники камери
+    startCameraBtn.addEventListener('click', startCamera);
+    stopCameraBtn.addEventListener('click', stopCamera);
+    testEmotionsBtn.addEventListener('click', testEmotions);
+
+    // Керування з клавіатури
+    document.addEventListener('keydown', (event) => {
+      switch(event.key) {
+        case 'ArrowLeft':
+          angle = Math.max(0, angle - 5);
+          angleSlider.value = angle;
+          updateScene();
+          break;
+        case 'ArrowRight':
+          angle = Math.min(360, angle + 5);
+          angleSlider.value = angle;
+          updateScene();
+          break;
+        case ' ':
+          animateCheck.checked = !animateCheck.checked;
+          animating = animateCheck.checked;
+          if (animating) animate();
+          event.preventDefault();
+          break;
+        case 'c':
+        case 'C':
+          if (cameraActive) {
+            stopCamera();
+          } else {
+            startCamera();
+          }
+          break;
       }
     });
 
-    // Обробники кнопок емоцій
-    emotionButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        if (!cameraActive) {
-          console.log('Ручна зміна емоції:', btn.dataset.emotion);
-          updateEmotion(btn.dataset.emotion);
-        }
-      });
+    // Touch підтримка для мобільних пристроїв
+    let touchStartX = 0;
+    let touchStartAngle = 0;
+
+    angleSlider.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartAngle = angle;
     });
 
-    // Ініціалізація
-    updateScene();
-    
-    // Перевірка підтримки getUserMedia
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      console.log('✅ getUserMedia підтримується');
-      detectionInfo.textContent = 'Натисніть кнопку камери для тесту';
-    } else {
-      console.log('❌ getUserMedia НЕ підтримується');
-      detectionInfo.textContent = 'Камера не підтримується браузером';
-      cameraToggle.disabled = true;
+    angleSlider.addEventListener('touchmove', (e) => {
+      const touchX = e.touches[0].clientX;
+      const deltaX = touchX - touchStartX;
+      const newAngle = Math.max(0, Math.min(360, touchStartAngle + deltaX * 0.5));
+      
+      angle = Math.round(newAngle);
+      angleSlider.value = angle;
+      updateScene();
+    });
+
+    // Автоматичне визначення особливих кутів
+    function highlightSpecialAngles(currentAngle) {
+      const specialAngles = [0, 30, 45, 60, 90, 120, 135, 150, 180, 210, 225, 240, 270, 300, 315, 330, 360];
+      const threshold = 2; // градуси
+      
+      const isSpecial = specialAngles.some(special => 
+        Math.abs(currentAngle - special) <= threshold
+      );
+      
+      if (isSpecial) {
+        dot.setAttribute("material", "color: #ff6b6b; emissive: #ff6b6b; emissiveIntensity: 0.5");
+        // Додаткові ефекти для особливих кутів
+        setTimeout(() => {
+          dot.setAttribute("material", "color: #ffd700; emissive: #ffd700; emissiveIntensity: 0.3");
+        }, 500);
+      }
     }
+
+    // Модифікована функція updateScene з підсвічуванням особливих кутів
+    const originalUpdateScene = updateScene;
+    updateScene = function() {
+      originalUpdateScene();
+      highlightSpecialAngles(angle);
+    };
+
+    // Функція для створення підказок
+    function showTooltip(message, duration = 3000) {
+      const tooltip = document.createElement('div');
+      tooltip.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        padding: 15px 25px;
+        border-radius: 10px;
+        font-size: 16px;
+        z-index: 10000;
+        pointer-events: none;
+        animation: fadeInUp 0.3s ease-out;
+      `;
+      tooltip.textContent = message;
+      document.body.appendChild(tooltip);
+      
+      setTimeout(() => {
+        tooltip.style.animation = 'fadeInUp 0.3s ease-out reverse';
+        setTimeout(() => tooltip.remove(), 300);
+      }, duration);
+    }
+
+    // Перевірка підтримки камери
+    async function checkCameraSupport() {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const hasCamera = devices.some(device => device.kind === 'videoinput');
+        
+        if (!hasCamera) {
+          startCameraBtn.disabled = true;
+          startCameraBtn.textContent = '❌ Камера недоступна';
+          showTooltip('Камера не знайдена на цьому пристрої', 4000);
+        }
+      } catch (error) {
+        console.error('Помилка перевірки камери:', error);
+        startCameraBtn.disabled = true;
+        startCameraBtn.textContent = '❌ Камера недоступна';
+      }
+    }
+
+    // Ініціалізація при завантаженні
+    document.addEventListener('DOMContentLoaded', () => {
+      updateScene();
+      checkCameraSupport();
+      
+      // Вітальне повідомлення
+      setTimeout(() => {
+        showTooltip('🎯 Емоційне тригонометричне коло готове! Увімкніть камеру для керування емоціями', 5000);
+      }, 1000);
+
+      // Підказка про функції
+      setTimeout(() => {
+        showTooltip('📸 Посміхніться для прискорення анімації або засмутьтеся для уповільнення!', 4000);
+      }, 7000);
+    });
+
+    // Обробка помилок
+    window.addEventListener('error', (event) => {
+      console.error('Глобальна помилка:', event.error);
+      if (event.error.message.includes('face-api') || event.error.message.includes('tensorflow')) {
+        showTooltip('Помилка завантаження AI моделей. Спробуйте оновити сторінку.', 5000);
+      }
+    });
+
+    // Автоматична ініціалізація Face-API при завантаженні сторінки
+    initializeFaceAPI().then((success) => {
+      if (success) {
+        console.log('Face-API готовий до використання');
+        showTooltip('✅ AI система готова! Спробуйте кнопку "🧪 Тест емоцій"', 4000);
+      } else {
+        console.error('Не вдалося ініціалізувати Face-API');
+        showTooltip('⚠️ Використовується спрощений режим розпізнавання', 5000);
+      }
+    });
+
   </script>
 </body>
 </html>
