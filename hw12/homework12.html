@@ -2,9 +2,9 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>AR-сцена з двома моделями</title>
+    <title>AR-сцена без маркера</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
     <style>
         .arjs-loader {
             height: 100%;
@@ -22,6 +22,7 @@
             text-align: center;
             font-size: 1.25em;
             color: white;
+            line-height: 1.4;
         }
         .controls {
             position: fixed;
@@ -34,77 +35,150 @@
             border-radius: 5px;
             font-family: Arial, sans-serif;
             font-size: 12px;
+            max-width: 200px;
+        }
+        .debug-info {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: Arial, sans-serif;
+            font-size: 10px;
         }
     </style>
 </head>
 <body style="margin: 0px; overflow: hidden;">
     <!-- Завантажувач -->
     <div class="arjs-loader">
-        <div>Завантаження AR, будь ласка зачекайте...</div>
+        <div>
+            Завантаження AR...<br>
+            Дозвольте доступ до GPS та камери<br>
+            Тримайте пристрій вертикально
+        </div>
     </div>
 
     <!-- Інформація про керування -->
     <div class="controls">
-        <div>📱 Наведіть камеру на маркер</div>
-        <div>👆 Натисніть на об'єкти для взаємодії</div>
+        <div>📱 Оберніться навколо себе</div>
+        <div>👈 Ліва модель - на заході</div>
+        <div>👉 Права модель - на сході</div>
+        <div>👆 Натисніть на об'єкти</div>
+    </div>
+
+    <!-- Налагоджувальна інформація -->
+    <div class="debug-info" id="debug">
+        <div>GPS: Очікування...</div>
+        <div>Компас: Очікування...</div>
     </div>
 
     <script>
         // Компонент для анімації обертання
         AFRAME.registerComponent('rotation-animation', {
             schema: {
-                speed: {default: 1}
+                speed: {default: 1},
+                axis: {default: 'y'}
             },
             init: function () {
                 var el = this.el;
                 var data = this.data;
                 
-                // Анімація обертання навколо Y-осі
+                var rotation = '0 360 0';
+                if (data.axis === 'x') rotation = '360 0 0';
+                if (data.axis === 'z') rotation = '0 0 360';
+                
                 el.setAttribute('animation', {
                     property: 'rotation',
-                    to: '0 360 0',
+                    to: rotation,
                     loop: true,
                     dur: 5000 / data.speed
                 });
             }
         });
 
-        // Компонент для стрибка при кліку
-        AFRAME.registerComponent('bounce-on-click', {
+        // Компонент для плавного руху
+        AFRAME.registerComponent('float-animation', {
             init: function () {
                 var el = this.el;
-                var originalPosition = el.getAttribute('position');
+                var originalY = el.getAttribute('position').y;
                 
-                el.addEventListener('click', function () {
-                    // Анімація стрибка
-                    el.setAttribute('animation__bounce', {
-                        property: 'position.y',
-                        to: originalPosition.y + 2,
-                        dur: 300,
-                        easing: 'easeOutQuad',
-                        dir: 'alternate',
-                        loop: 1
-                    });
-                    
-                    console.log('Клік на об\'єкт!');
+                el.setAttribute('animation__float', {
+                    property: 'position.y',
+                    to: originalY + 1,
+                    dur: 3000,
+                    easing: 'easeInOutSine',
+                    dir: 'alternate',
+                    loop: true
                 });
             }
         });
 
-        // Компонент для зміни кольору при кліку
-        AFRAME.registerComponent('color-change-click', {
+        // Компонент для інтерактивності
+        AFRAME.registerComponent('interactive', {
             schema: {
-                colors: {default: ['red', 'blue', 'green', 'yellow', 'purple', 'orange']}
+                colors: {default: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD']}
             },
             init: function () {
                 var el = this.el;
                 var data = this.data;
                 var colorIndex = 0;
+                var originalScale = el.getAttribute('scale');
                 
                 el.addEventListener('click', function () {
+                    // Зміна кольору
                     colorIndex = (colorIndex + 1) % data.colors.length;
                     el.setAttribute('material', 'color', data.colors[colorIndex]);
+                    
+                    // Анімація масштабування
+                    el.setAttribute('animation__scale', {
+                        property: 'scale',
+                        to: `${originalScale.x * 1.5} ${originalScale.y * 1.5} ${originalScale.z * 1.5}`,
+                        dur: 200,
+                        easing: 'easeOutQuad',
+                        dir: 'alternate',
+                        loop: 1
+                    });
+                    
+                    console.log('Клік на AR об\'єкт!');
                 });
+
+                // Ефект наведення (для веб-версії)
+                el.addEventListener('mouseenter', function () {
+                    el.setAttribute('animation__hover', {
+                        property: 'scale',
+                        to: `${originalScale.x * 1.1} ${originalScale.y * 1.1} ${originalScale.z * 1.1}`,
+                        dur: 200
+                    });
+                });
+
+                el.addEventListener('mouseleave', function () {
+                    el.setAttribute('animation__hover', {
+                        property: 'scale',
+                        to: `${originalScale.x} ${originalScale.y} ${originalScale.z}`,
+                        dur: 200
+                    });
+                });
+            }
+        });
+
+        // Компонент для налагодження
+        AFRAME.registerComponent('debug-gps', {
+            init: function () {
+                var debugEl = document.getElementById('debug');
+                
+                setInterval(() => {
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition((position) => {
+                            debugEl.innerHTML = `
+                                <div>GPS: ${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}</div>
+                                <div>Точність: ±${position.coords.accuracy}м</div>
+                            `;
+                        });
+                    }
+                }, 2000);
             }
         });
     </script>
@@ -112,111 +186,160 @@
     <a-scene 
         vr-mode-ui="enabled: false;" 
         embedded 
-        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
+        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; trackingMethod: best;"
+        debug-gps>
         
-        <!-- Маркер для запуску AR -->
-        <a-marker preset="hiro">
+        <!-- Ліва модель: Тор (на заході від користувача) -->
+        <a-torus 
+            gps-entity-place="latitude: 47.9083; longitude: 33.4110;" 
+            position="0 2 0"
+            color="#FF6B6B" 
+            radius="2" 
+            radius-tubular="0.5"
+            rotation-animation="speed: 1.5; axis: y"
+            float-animation
+            interactive
+            look-at="[gps-camera]"
+            scale="8 8 8">
             
-            <!-- Ліва модель: Тор з анімацією -->
-            <a-torus 
-                position="-3 0.5 0" 
-                color="#FF6B6B" 
-                radius="1" 
-                radius-tubular="0.2"
-                rotation-animation="speed: 1.5"
-                bounce-on-click
-                color-change-click="colors: #FF6B6B, #4ECDC4, #45B7D1, #96CEB4, #FFEAA7"
-                shadow="cast: true; receive: true">
-                
-                <!-- Додаємо текст над об'єктом -->
-                <a-text 
-                    value="ЛІВА МОДЕЛЬ" 
-                    position="0 2 0" 
-                    align="center" 
-                    color="#FFFFFF"
-                    scale="0.8 0.8 0.8">
-                </a-text>
-            </a-torus>
+            <!-- Текст над об'єктом -->
+            <a-text 
+                value="ЛІВА МОДЕЛЬ\nЗАХІД" 
+                position="0 4 0" 
+                align="center" 
+                color="#FFFFFF"
+                scale="2 2 2"
+                look-at="[gps-camera]">
+            </a-text>
+        </a-torus>
 
-            <!-- Права модель: Додекаедр з анімацією -->
-            <a-dodecahedron 
-                position="3 1 0" 
-                color="#4ECDC4" 
-                radius="1"
-                rotation-animation="speed: 0.8"
-                bounce-on-click
-                color-change-click="colors: #4ECDC4, #FF6B6B, #96CEB4, #FFEAA7, #DDA0DD"
-                shadow="cast: true; receive: true">
-                
-                <!-- Текст над правою моделлю -->
-                <a-text 
-                    value="ПРАВА МОДЕЛЬ" 
-                    position="0 2.5 0" 
-                    align="center" 
-                    color="#FFFFFF"
-                    scale="0.8 0.8 0.8">
-                </a-text>
-            </a-dodecahedron>
+        <!-- Права модель: Додекаедр (на сході від користувача) -->
+        <a-dodecahedron 
+            gps-entity-place="latitude: 47.9084; longitude: 33.4120;" 
+            position="0 3 0"
+            color="#4ECDC4" 
+            radius="2"
+            rotation-animation="speed: 0.8; axis: x"
+            float-animation
+            interactive
+            look-at="[gps-camera]"
+            scale="6 6 6">
+            
+            <!-- Текст над об'єктом -->
+            <a-text 
+                value="ПРАВА МОДЕЛЬ\nСХІД" 
+                position="0 5 0" 
+                align="center" 
+                color="#FFFFFF"
+                scale="2 2 2"
+                look-at="[gps-camera]">
+            </a-text>
+        </a-dodecahedron>
 
-            <!-- Центральний елемент для орієнтації -->
-            <a-cylinder 
-                position="0 0.1 0" 
-                color="#DDA0DD" 
-                radius="0.3" 
-                height="0.2"
-                opacity="0.7">
-                
-                <a-text 
-                    value="ЦЕНТР" 
-                    position="0 0.5 0" 
-                    align="center" 
-                    color="#FFFFFF"
-                    scale="0.6 0.6 0.6">
-                </a-text>
-            </a-cylinder>
+        <!-- Північна модель: Куб -->
+        <a-box 
+            gps-entity-place="latitude: 47.9090; longitude: 33.4115;" 
+            position="0 1.5 0"
+            color="#96CEB4" 
+            width="3" 
+            height="3" 
+            depth="3"
+            rotation-animation="speed: 1.2; axis: z"
+            interactive
+            look-at="[gps-camera]"
+            scale="4 4 4">
+            
+            <a-text 
+                value="ПІВНІЧ" 
+                position="0 2.5 0" 
+                align="center" 
+                color="#FFFFFF"
+                scale="1.5 1.5 1.5"
+                look-at="[gps-camera]">
+            </a-text>
+        </a-box>
 
-            <!-- Площина-основа для тіней -->
-            <a-plane 
-                position="0 -0.1 0" 
-                rotation="-90 0 0" 
-                width="8" 
-                height="8" 
-                color="#CCCCCC" 
-                opacity="0.3"
-                shadow="receive: true">
-            </a-plane>
+        <!-- Південна модель: Сфера -->
+        <a-sphere 
+            gps-entity-place="latitude: 47.9076; longitude: 33.4115;" 
+            position="0 2.5 0"
+            color="#FFEAA7" 
+            radius="1.5"
+            rotation-animation="speed: 2; axis: y"
+            float-animation
+            interactive
+            look-at="[gps-camera]"
+            scale="5 5 5">
+            
+            <a-text 
+                value="ПІВДЕНЬ" 
+                position="0 2.5 0" 
+                align="center" 
+                color="#333333"
+                scale="1.5 1.5 1.5"
+                look-at="[gps-camera]">
+            </a-text>
+        </a-sphere>
 
-            <!-- Додаткові декоративні елементи -->
-            <a-sphere 
-                position="-1.5 0.2 -2" 
-                color="#96CEB4" 
-                radius="0.3"
-                rotation-animation="speed: 2"
-                opacity="0.8">
-            </a-sphere>
+        <!-- Центральний маркер -->
+        <a-cylinder 
+            gps-entity-place="latitude: 47.9083; longitude: 33.4115;" 
+            position="0 0.5 0"
+            color="#DDA0DD" 
+            radius="1" 
+            height="1"
+            opacity="0.7"
+            scale="3 3 3">
+            
+            <a-text 
+                value="ВИ ТУТ" 
+                position="0 1 0" 
+                align="center" 
+                color="#FFFFFF"
+                scale="1.5 1.5 1.5"
+                look-at="[gps-camera]">
+            </a-text>
+        </a-cylinder>
 
-            <a-sphere 
-                position="1.5 0.2 -2" 
-                color="#FFEAA7" 
-                radius="0.3"
-                rotation-animation="speed: 2.5"
-                opacity="0.8">
-            </a-sphere>
+        <!-- Додаткові декоративні елементи -->
+        <a-icosahedron 
+            gps-entity-place="latitude: 47.9085; longitude: 33.4112;" 
+            position="0 4 0"
+            color="#FF69B4" 
+            radius="1"
+            rotation-animation="speed: 3; axis: x"
+            interactive
+            look-at="[gps-camera]"
+            scale="3 3 3"
+            opacity="0.8">
+        </a-icosahedron>
 
-        </a-marker>
+        <a-octahedron 
+            gps-entity-place="latitude: 47.9081; longitude: 33.4118;" 
+            position="0 3.5 0"
+            color="#20B2AA" 
+            radius="1"
+            rotation-animation="speed: 2.5; axis: z"
+            interactive
+            look-at="[gps-camera]"
+            scale="2.5 2.5 2.5"
+            opacity="0.8">
+        </a-octahedron>
 
-        <!-- Камера з курсором для взаємодії -->
-        <a-entity camera>
+        <!-- GPS-камера з курсором -->
+        <a-camera 
+            gps-camera 
+            rotation-reader
+            wasd-controls="enabled: false"
+            look-controls="enabled: true"
+            cursor="rayOrigin: mouse">
+            
             <a-cursor 
                 color="#FFFFFF"
-                raycaster="objects: a-torus, a-dodecahedron, a-sphere">
+                opacity="0.8"
+                raycaster="objects: [gps-entity-place]">
             </a-cursor>
-        </a-entity>
-        
-        <!-- Освітлення -->
-        <a-light type="ambient" color="#FFFFFF" intensity="0.4"></a-light>
-        <a-light type="directional" position="2 4 5" intensity="0.8" shadow="cast: true"></a-light>
+        </a-camera>
     </a-scene>
 </body>
 </html>
-
