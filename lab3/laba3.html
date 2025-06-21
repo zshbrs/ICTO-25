@@ -184,7 +184,7 @@
     const clock = new THREE.Clock();
     
     // Ініціалізація сцени
-    function init() {
+    async function init() {
       // Створення контейнера
       const container = document.getElementById('container');
       
@@ -223,8 +223,8 @@
       renderer.xr.addEventListener('sessionstart', onSessionStart);
       renderer.xr.addEventListener('sessionend', onSessionEnd);
       
-      // Створення системи Земля-Місяць
-      createEarthMoonSystem();
+      // Створення системи Земля-Місяць (асинхронно)
+      await createEarthMoonSystem();
       
       // Створення reticle для розміщення об'єктів
       createReticle();
@@ -265,13 +265,13 @@
       }
     }
     
-    function createEarthMoonSystem() {
+    async function createEarthMoonSystem() {
       // Група для всієї системи
       earthMoonSystem = new THREE.Group();
       
-      // Створення Землі
+      // Створення Землі з асинхронним завантаженням текстури
       const earthGeometry = new THREE.SphereGeometry(0.6, 32, 64);
-      const earthMaterial = createEarthMaterial();
+      const earthMaterial = await createEarthMaterial();
       
       earth = new THREE.Mesh(earthGeometry, earthMaterial);
       earth.castShadow = true;
@@ -279,9 +279,9 @@
       earth.position.set(0, 0, 0);
       earthMoonSystem.add(earth);
       
-      // Створення системи Місяця
+      // Створення системи Місяця з асинхронним завантаженням текстури
       const moonGeometry = new THREE.SphereGeometry(0.1632, 32, 64);
-      const moonMaterial = createMoonMaterial();
+      const moonMaterial = await createMoonMaterial();
       
       moon = new THREE.Mesh(moonGeometry, moonMaterial);
       moon.castShadow = true;
@@ -300,7 +300,36 @@
     }
     
     function createEarthMaterial() {
-      // Створення процедурної текстури Землі
+      const textureLoader = new THREE.TextureLoader();
+      textureLoader.setCrossOrigin('anonymous');
+      
+      // Спроба завантаження текстури Землі
+      return new Promise((resolve) => {
+        textureLoader.load(
+          '../images/2k_earth_daymap.jpg',
+          (texture) => {
+            texture.colorSpace = THREE.SRGBColorSpace;
+            const material = new THREE.MeshStandardMaterial({ 
+              map: texture,
+              roughness: 0.8,
+              metalness: 0.1
+            });
+            console.log('Earth texture loaded successfully');
+            resolve(material);
+          },
+          undefined,
+          (error) => {
+            console.warn('Error loading Earth texture, using fallback:', error);
+            // Fallback до процедурної текстури
+            const material = createFallbackEarthMaterial();
+            resolve(material);
+          }
+        );
+      });
+    }
+    
+    function createFallbackEarthMaterial() {
+      // Процедурна текстура як fallback
       const canvas = document.createElement('canvas');
       canvas.width = 512;
       canvas.height = 256;
@@ -353,7 +382,36 @@
     }
     
     function createMoonMaterial() {
-      // Створення процедурної текстури Місяця
+      const textureLoader = new THREE.TextureLoader();
+      textureLoader.setCrossOrigin('anonymous');
+      
+      // Спроба завантаження текстури Місяця
+      return new Promise((resolve) => {
+        textureLoader.load(
+          '../images/2k_moon.jpg',
+          (texture) => {
+            texture.colorSpace = THREE.SRGBColorSpace;
+            const material = new THREE.MeshStandardMaterial({ 
+              map: texture,
+              roughness: 0.9,
+              metalness: 0.0
+            });
+            console.log('Moon texture loaded successfully');
+            resolve(material);
+          },
+          undefined,
+          (error) => {
+            console.warn('Error loading Moon texture, using fallback:', error);
+            // Fallback до процедурної текстури
+            const material = createFallbackMoonMaterial();
+            resolve(material);
+          }
+        );
+      });
+    }
+    
+    function createFallbackMoonMaterial() {
+      // Процедурна текстура як fallback
       const canvas = document.createElement('canvas');
       canvas.width = 256;
       canvas.height = 128;
@@ -616,7 +674,11 @@
     };
     
     // Запуск ініціалізації
-    init();
+    init().catch(error => {
+      console.error('Error during initialization:', error);
+      document.getElementById('status').innerHTML = 
+        '<div>❌ Помилка ініціалізації</div><div>Перевірте консоль для деталей</div>';
+    });
   </script>
 </body>
 </html>
