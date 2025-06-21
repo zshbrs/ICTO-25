@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Система Земля-Місяць AR</title>
+    <title>Система Земля-Місяць</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-three.prod.js"></script>
     <style>
         body {
             margin: 0;
             padding: 0;
-            background: #000;
+            background: linear-gradient(to bottom, #000428, #004e92);
             font-family: Arial, sans-serif;
+            overflow: hidden;
         }
         
         #container {
@@ -22,63 +22,93 @@
         
         #info {
             position: absolute;
-            top: 10px;
-            left: 10px;
+            top: 20px;
+            left: 20px;
             color: white;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 12px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
             z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
         #controls {
             position: absolute;
-            bottom: 20px;
+            bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 1000;
+            display: flex;
+            gap: 10px;
         }
         
         button {
-            background: rgba(255, 255, 255, 0.9);
+            background: linear-gradient(45deg, #667eea, #764ba2);
             border: none;
-            padding: 10px 15px;
-            margin: 0 5px;
-            border-radius: 5px;
+            padding: 12px 20px;
+            border-radius: 25px;
             cursor: pointer;
             font-size: 14px;
+            color: white;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         }
         
         button:hover {
-            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
         }
         
-        #loading {
+        button:active {
+            transform: translateY(0);
+        }
+        
+        #stats {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            top: 20px;
+            right: 20px;
             color: white;
-            font-size: 18px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 12px;
             z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .highlight {
+            color: #64b5f6;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <div id="container">
-        <div id="loading">Завантаження AR сцени...</div>
-        <div id="info">
-            <div>Система Земля-Місяць</div>
-            <div>Масштаб: 1:1,000,000</div>
-            <div>Час: 1:17,000</div>
-            <div id="time-display">День: 0</div>
+    <div id="container"></div>
+    
+    <div id="info">
+        <div style="font-size: 16px; margin-bottom: 10px;">🌍 Система Земля-Місяць</div>
+        <div>Масштаб простору: <span class="highlight">1:1,000,000</span></div>
+        <div>Масштаб часу: <span class="highlight">1:17,000</span></div>
+        <div id="time-display">День: <span class="highlight">0</span></div>
+        <div style="margin-top: 10px; font-size: 11px; opacity: 0.8;">
+            🖱️ Використовуйте мишу для обертання камери
         </div>
-        <div id="controls">
-            <button onclick="toggleAnimation()">Пауза/Старт</button>
-            <button onclick="resetAnimation()">Скинути</button>
-            <button onclick="changeSpeed()">Швидкість</button>
-        </div>
+    </div>
+    
+    <div id="stats">
+        <div>Радіус Землі: <span class="highlight">6,400 км</span></div>
+        <div>Радіус Місяця: <span class="highlight">1,740 км</span></div>
+        <div>Відстань: <span class="highlight">384,400 км</span></div>
+        <div id="speed-display">Швидкість: <span class="highlight">x1</span></div>
+    </div>
+    
+    <div id="controls">
+        <button onclick="toggleAnimation()">⏸️ Пауза</button>
+        <button onclick="resetAnimation()">🔄 Скинути</button>
+        <button onclick="changeSpeed()">⚡ Швидкість</button>
+        <button onclick="toggleView()">📹 Вид</button>
     </div>
 
     <script>
@@ -100,111 +130,222 @@
         let animationSpeed = 1;
         let isAnimating = true;
         let currentDay = 0;
+        let viewMode = 0; // 0 - загальний вид, 1 - з Землі, 2 - з Місяця
         
         // Three.js об'єкти
-        let scene, camera, renderer, anchor;
+        let scene, camera, renderer;
         let earth, moon, earthGroup, moonGroup;
+        let controls;
         let clock = new THREE.Clock();
+        let stars;
         
-        // MindAR
-        let mindarThree;
-        
-        async function initAR() {
-            try {
-                // Ініціалізація MindAR
-                mindarThree = new window.MINDAR.IMAGE.MindARThree({
-                    container: document.getElementById('container'),
-                    imageTargetSrc: 'earth.mind' // Файл маркера
-                });
-                
-                const { renderer: arRenderer, scene: arScene, camera: arCamera } = mindarThree;
-                renderer = arRenderer;
-                scene = arScene;
-                camera = arCamera;
-                
-                // Створення якора для AR
-                anchor = mindarThree.addAnchor(0);
-                
-                // Створення освітлення
-                const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
-                scene.add(ambientLight);
-                
-                const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-                directionalLight.position.set(5, 5, 5);
-                scene.add(directionalLight);
-                
-                // Створення текстур
-                const textureLoader = new THREE.TextureLoader();
-                
-                // Завантаження текстур або використання кольорів за замовчуванням
-                let earthTexture, moonTexture;
-                
-                try {
-                    earthTexture = await loadTexture(textureLoader, '2k_earth_daymap.jpg');
-                } catch (e) {
-                    console.log('Текстура Землі не знайдена, використовуємо колір за замовчуванням');
-                    earthTexture = null;
-                }
-                
-                try {
-                    moonTexture = await loadTexture(textureLoader, '2k_moon.jpg');
-                } catch (e) {
-                    console.log('Текстура Місяця не знайдена, використовуємо колір за замовчуванням');
-                    moonTexture = null;
-                }
-                
-                // Створення Землі
-                const earthGeometry = new THREE.SphereGeometry(earthRadius, 32, 32);
-                const earthMaterial = earthTexture 
-                    ? new THREE.MeshLambertMaterial({ map: earthTexture })
-                    : new THREE.MeshLambertMaterial({ color: 0x6B93D6 });
-                
-                earth = new THREE.Mesh(earthGeometry, earthMaterial);
-                
-                // Група для Землі
-                earthGroup = new THREE.Group();
-                earthGroup.add(earth);
-                
-                // Створення Місяця
-                const moonGeometry = new THREE.SphereGeometry(moonRadius, 16, 16);
-                const moonMaterial = moonTexture 
-                    ? new THREE.MeshLambertMaterial({ map: moonTexture })
-                    : new THREE.MeshLambertMaterial({ color: 0xC0C0C0 });
-                
-                moon = new THREE.Mesh(moonGeometry, moonMaterial);
-                moon.position.x = earthMoonDistance;
-                
-                // Група для системи Місяця
-                moonGroup = new THREE.Group();
-                moonGroup.add(moon);
-                
-                // Додавання до якора
-                anchor.group.add(earthGroup);
-                anchor.group.add(moonGroup);
-                
-                // Початок AR
-                await mindarThree.start();
-                
-                document.getElementById('loading').style.display = 'none';
-                
-                // Запуск анімації
-                animate();
-                
-            } catch (error) {
-                console.error('Помилка ініціалізації AR:', error);
-                document.getElementById('loading').textContent = 'Помилка завантаження AR. Перевірте камеру та маркер.';
-            }
+        function init() {
+            // Створення сцени
+            scene = new THREE.Scene();
+            
+            // Створення камери
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.01, 1000);
+            camera.position.set(1, 0.5, 1);
+            
+            // Створення рендерера
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('container').appendChild(renderer.domElement);
+            
+            // Додавання простого управління мишею
+            addMouseControls();
+            
+            // Створення зірок
+            createStars();
+            
+            // Створення освітлення
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+            scene.add(ambientLight);
+            
+            const sunLight = new THREE.DirectionalLight(0xffffff, 1);
+            sunLight.position.set(10, 5, 5);
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 2048;
+            sunLight.shadow.mapSize.height = 2048;
+            scene.add(sunLight);
+            
+            // Створення текстур або кольорів за замовчуванням
+            createEarthMoonSystem();
+            
+            // Запуск анімації
+            animate();
         }
         
-        function loadTexture(loader, url) {
-            return new Promise((resolve, reject) => {
-                loader.load(
-                    url,
-                    resolve,
-                    undefined,
-                    reject
-                );
+        function createStars() {
+            const starsGeometry = new THREE.BufferGeometry();
+            const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 2 });
+            
+            const starsVertices = [];
+            for (let i = 0; i < 1000; i++) {
+                const x = (Math.random() - 0.5) * 100;
+                const y = (Math.random() - 0.5) * 100;
+                const z = (Math.random() - 0.5) * 100;
+                starsVertices.push(x, y, z);
+            }
+            
+            starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starsVertices, 3));
+            stars = new THREE.Points(starsGeometry, starsMaterial);
+            scene.add(stars);
+        }
+        
+        function createEarthMoonSystem() {
+            // Створення Землі
+            const earthGeometry = new THREE.SphereGeometry(earthRadius, 32, 32);
+            
+            // Спроба завантажити текстуру або використання градієнта
+            const textureLoader = new THREE.TextureLoader();
+            let earthMaterial;
+            
+            // Створення текстури Землі програмно
+            const earthCanvas = document.createElement('canvas');
+            earthCanvas.width = 512;
+            earthCanvas.height = 256;
+            const earthCtx = earthCanvas.getContext('2d');
+            
+            // Градієнт для Землі
+            const earthGradient = earthCtx.createLinearGradient(0, 0, 512, 256);
+            earthGradient.addColorStop(0, '#4a90e2');
+            earthGradient.addColorStop(0.3, '#7bb3f0');
+            earthGradient.addColorStop(0.7, '#357abd');
+            earthGradient.addColorStop(1, '#2e5c8a');
+            
+            earthCtx.fillStyle = earthGradient;
+            earthCtx.fillRect(0, 0, 512, 256);
+            
+            // Додавання "континентів"
+            earthCtx.fillStyle = '#4a7c59';
+            for (let i = 0; i < 20; i++) {
+                const x = Math.random() * 512;
+                const y = Math.random() * 256;
+                const size = Math.random() * 50 + 20;
+                earthCtx.beginPath();
+                earthCtx.arc(x, y, size, 0, Math.PI * 2);
+                earthCtx.fill();
+            }
+            
+            const earthTexture = new THREE.CanvasTexture(earthCanvas);
+            earthMaterial = new THREE.MeshLambertMaterial({ map: earthTexture });
+            
+            earth = new THREE.Mesh(earthGeometry, earthMaterial);
+            earth.castShadow = true;
+            earth.receiveShadow = true;
+            
+            // Група для Землі
+            earthGroup = new THREE.Group();
+            earthGroup.add(earth);
+            scene.add(earthGroup);
+            
+            // Створення Місяця
+            const moonGeometry = new THREE.SphereGeometry(moonRadius, 16, 16);
+            
+            // Створення текстури Місяця програмно
+            const moonCanvas = document.createElement('canvas');
+            moonCanvas.width = 256;
+            moonCanvas.height = 128;
+            const moonCtx = moonCanvas.getContext('2d');
+            
+            // Базовий колір Місяця
+            moonCtx.fillStyle = '#c0c0c0';
+            moonCtx.fillRect(0, 0, 256, 128);
+            
+            // Додавання кратерів
+            moonCtx.fillStyle = '#a0a0a0';
+            for (let i = 0; i < 30; i++) {
+                const x = Math.random() * 256;
+                const y = Math.random() * 128;
+                const size = Math.random() * 15 + 5;
+                moonCtx.beginPath();
+                moonCtx.arc(x, y, size, 0, Math.PI * 2);
+                moonCtx.fill();
+            }
+            
+            const moonTexture = new THREE.CanvasTexture(moonCanvas);
+            const moonMaterial = new THREE.MeshLambertMaterial({ map: moonTexture });
+            
+            moon = new THREE.Mesh(moonGeometry, moonMaterial);
+            moon.position.x = earthMoonDistance;
+            moon.castShadow = true;
+            moon.receiveShadow = true;
+            
+            // Група для системи Місяця
+            moonGroup = new THREE.Group();
+            moonGroup.add(moon);
+            scene.add(moonGroup);
+            
+            // Додавання орбіти Місяця (візуалізація)
+            const orbitGeometry = new THREE.RingGeometry(earthMoonDistance - 0.001, earthMoonDistance + 0.001, 64);
+            const orbitMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0xffffff, 
+                transparent: true, 
+                opacity: 0.1,
+                side: THREE.DoubleSide 
             });
+            const orbit = new THREE.Mesh(orbitGeometry, orbitMaterial);
+            orbit.rotation.x = Math.PI / 2;
+            scene.add(orbit);
+        }
+        
+        function addMouseControls() {
+            let isMouseDown = false;
+            let mouseX = 0;
+            let mouseY = 0;
+            let targetRotationX = 0;
+            let targetRotationY = 0;
+            let currentRotationX = 0;
+            let currentRotationY = 0;
+            
+            renderer.domElement.addEventListener('mousedown', (event) => {
+                isMouseDown = true;
+                mouseX = event.clientX;
+                mouseY = event.clientY;
+            });
+            
+            renderer.domElement.addEventListener('mousemove', (event) => {
+                if (isMouseDown) {
+                    const deltaX = event.clientX - mouseX;
+                    const deltaY = event.clientY - mouseY;
+                    
+                    targetRotationY += deltaX * 0.005;
+                    targetRotationX += deltaY * 0.005;
+                    targetRotationX = Math.max(-Math.PI/2, Math.min(Math.PI/2, targetRotationX));
+                    
+                    mouseX = event.clientX;
+                    mouseY = event.clientY;
+                }
+            });
+            
+            renderer.domElement.addEventListener('mouseup', () => {
+                isMouseDown = false;
+            });
+            
+            renderer.domElement.addEventListener('wheel', (event) => {
+                camera.position.multiplyScalar(event.deltaY > 0 ? 1.1 : 0.9);
+                camera.position.clampLength(0.5, 10);
+            });
+            
+            // Оновлення позиції камери
+            function updateCamera() {
+                currentRotationX += (targetRotationX - currentRotationX) * 0.1;
+                currentRotationY += (targetRotationY - currentRotationY) * 0.1;
+                
+                if (viewMode === 0) {
+                    const distance = camera.position.length();
+                    camera.position.x = distance * Math.cos(currentRotationX) * Math.sin(currentRotationY);
+                    camera.position.y = distance * Math.sin(currentRotationX);
+                    camera.position.z = distance * Math.cos(currentRotationX) * Math.cos(currentRotationY);
+                    camera.lookAt(0, 0, 0);
+                }
+                
+                requestAnimationFrame(updateCamera);
+            }
+            updateCamera();
         }
         
         function animate() {
@@ -222,9 +363,15 @@
                 moonOrbit += (2 * Math.PI / (28 * 24 * 3600)) * deltaTime * speedMultiplier;
                 moonGroup.rotation.y = moonOrbit;
                 
+                // Синхронне обертання Місяця (завжди одна сторона до Землі)
+                moon.rotation.y = -moonOrbit;
+                
                 // Обрахунок поточного дня
                 currentDay = (earthRotation / (2 * Math.PI)) % 365;
-                document.getElementById('time-display').textContent = `День: ${Math.floor(currentDay)}`;
+                document.getElementById('time-display').innerHTML = `День: <span class="highlight">${Math.floor(currentDay)}</span>`;
+                
+                // Повільне обертання зірок
+                stars.rotation.y += 0.0001;
             }
             
             renderer.render(scene, camera);
@@ -233,6 +380,8 @@
         // Функції управління
         function toggleAnimation() {
             isAnimating = !isAnimating;
+            const button = event.target;
+            button.innerHTML = isAnimating ? '⏸️ Пауза' : '▶️ Старт';
             if (!isAnimating) {
                 clock.getDelta(); // Скидання deltaTime при паузі
             }
@@ -244,39 +393,44 @@
             currentDay = 0;
             earth.rotation.y = 0;
             moonGroup.rotation.y = 0;
+            moon.rotation.y = 0;
             clock = new THREE.Clock();
         }
         
         function changeSpeed() {
             animationSpeed = animationSpeed === 1 ? 5 : animationSpeed === 5 ? 10 : 1;
-            const button = event.target;
-            button.textContent = `Швидкість x${animationSpeed}`;
-            setTimeout(() => {
-                button.textContent = 'Швидкість';
-            }, 1000);
+            document.getElementById('speed-display').innerHTML = `Швидкість: <span class="highlight">x${animationSpeed}</span>`;
         }
         
-        // Обробка помилок
-        window.addEventListener('error', (e) => {
-            console.error('Помилка:', e.error);
-            document.getElementById('loading').textContent = 'Помилка завантаження. Перевірте підключення до інтернету.';
-        });
-        
-        // Запуск після завантаження сторінки
-        window.addEventListener('load', initAR);
+        function toggleView() {
+            viewMode = (viewMode + 1) % 3;
+            const views = ['📹 Загальний', '🌍 З Землі', '🌙 З Місяця'];
+            event.target.innerHTML = views[viewMode];
+            
+            switch (viewMode) {
+                case 0: // Загальний вид
+                    camera.position.set(1, 0.5, 1);
+                    break;
+                case 1: // Вид з Землі
+                    camera.position.set(0, 0, 0);
+                    camera.lookAt(moon.position);
+                    break;
+                case 2: // Вид з Місяця
+                    camera.position.copy(moon.position);
+                    camera.lookAt(0, 0, 0);
+                    break;
+            }
+        }
         
         // Обробка зміни розміру вікна
         window.addEventListener('resize', () => {
-            if (mindarThree) {
-                mindarThree.renderer.setSize(window.innerWidth, window.innerHeight);
-            }
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
         });
+        
+        // Запуск після завантаження сторінки
+        window.addEventListener('load', init);
     </script>
-    
-    <!-- Інструкції для користувача -->
-    <div style="position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); color: white; text-align: center; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 5px; font-size: 12px; z-index: 1000;">
-        <div>📱 Наведіть камеру на маркер із зображенням Землі</div>
-        <div>🌍 Система Земля-Місяць з'явиться у доповненій реальності</div>
-    </div>
 </body>
 </html>
